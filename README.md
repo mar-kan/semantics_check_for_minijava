@@ -31,3 +31,4 @@ The program checks:
     Overriding methods to match the type and arguments (type / number) of the overrided method.
     Duplicate fields in classes.
     Duplicate variables in methods.
+    Duplicate variables in main.

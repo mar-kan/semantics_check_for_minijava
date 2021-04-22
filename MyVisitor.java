@@ -216,7 +216,10 @@ class MyVisitor extends GJDepthFirst<String, String> {
                 methodData.addVariable(id, type);    // adds var in method of class
             }
             else if (scope.equals("main"))
+            {
+                parsedOk = evaluator.checkVarMainDuplicates(id, myClasses.getMainClass()) && parsedOk;    // checks for variable duplicates
                 myClasses.getMainClass().addField(id, type, null);  // adds var in main
+            }
             else // in class
             {
                 ClassData aClass = myClasses.searchClass(scope);

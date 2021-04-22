@@ -199,7 +199,33 @@ public class Evaluator {
         return true;
     }
 
-    //public boolean checkVariableForDuplicatesInMethod()
+    public boolean checkVarMainDuplicates(String varname, ClassData main)
+    {
+        // checks in arguments
+        /*if (main.getArguments() != null)
+        {
+            for (String[] argument : main.getArguments())
+            {
+                if (argument[1].equals(varname))
+                {
+                    System.err.println(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+" as an argument.");
+                    return false;
+                }
+            }
+        }*/
+
+        // checks in variables
+        for (VariableData var : main.getFields())
+        {
+            if (var.getName().equals(varname))
+            {
+                System.err.println(file_name + ":" + " error: Variable " + varname + " was already defined in main.");
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     public boolean compareVariableTypes(VariableData var1, VariableData var2)
     {

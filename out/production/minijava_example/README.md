@@ -29,3 +29,4 @@ The program checks:
     When classes that are inherited by others, that the class has already been declared.
     Method names for duplicates in the same scope.
     Overriding methods to match the type and arguments (type / number) of the overrided method.
+    Duplicate fields in classes.
