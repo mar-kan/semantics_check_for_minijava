@@ -1,7 +1,9 @@
 import Symbols.ClassData;
 import Symbols.MethodData;
 import Symbols.MyClasses;
+import Symbols.VariableData;
 
+import java.security.KeyPair;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -150,6 +152,61 @@ public class Evaluator {
                     submethod.argumentsToString()+">.\n\t"+uppermethod.getArguments()[i][1]+" must be of the same type.");
                 return false;
             }
+        }
+        return true;
+    }
+
+
+    /******** Variable checking ********/
+    public boolean checkFieldDuplicates(String fieldname, ClassData classData)
+    {
+        for (VariableData field : classData.getFields())
+        {
+            if (field.getName().equals(fieldname))
+            {
+                System.err.println(file_name+":"+" error: Field "+fieldname+" was already defined in class "+classData.getName()+".");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean checkVarMethodDuplicates(String varname, MethodData method)
+    {
+        // checks in arguments
+        if (method.getArguments() != null)
+        {
+            for (String[] argument : method.getArguments())
+            {
+                if (argument[1].equals(varname))
+                {
+                    System.err.println(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+" as an argument.");
+                    return false;
+                }
+            }
+        }
+
+        // checks in variables
+        for (Map.Entry<String, String> entry : method.getVariables().entrySet())
+        {
+            if (entry.getKey().equals(varname))
+            {
+                System.err.println(file_name + ":" + " error: Variable " + varname + " was already defined in method " + method.getName() + ".");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    //public boolean checkVariableForDuplicatesInMethod()
+
+    public boolean compareVariableTypes(VariableData var1, VariableData var2)
+    {
+        if (!var1.getType().equals(var2.getType()))
+        {
+            System.err.println(file_name+":"+" error: Variables "+var1+", "+var2+" must be of the same type.");
+            return false;
         }
         return true;
     }

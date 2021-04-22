@@ -80,4 +80,9 @@ public class MethodData {
     {
         return this.arguments;
     }
+
+    public Map<String, String> getVariables()
+    {
+        return variables;
+    }
 }

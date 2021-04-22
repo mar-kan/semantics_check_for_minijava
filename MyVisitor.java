@@ -60,7 +60,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String classname = n.f1.accept(this, null);
 
         // checks class for errors
-        parsedOk = parsedOk && evaluator.checkClassName(myClasses, classname, null);
+        parsedOk = evaluator.checkClassName(myClasses, classname, null) && parsedOk;
         myClasses.addClass(classname, null);    // adds new class in list
 
         n.f3.accept(this, classname);
@@ -86,7 +86,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String extend = n.f3.accept(this, null);
 
         // checks class for errors
-        parsedOk = parsedOk && evaluator.checkClassName(myClasses, classname, extend);
+        parsedOk = evaluator.checkClassName(myClasses, classname, extend) && parsedOk;
         myClasses.addClass(classname, myClasses.searchClass(extend)); // adds new class in list
 
         n.f5.accept(this, classname);
@@ -130,12 +130,9 @@ class MyVisitor extends GJDepthFirst<String, String> {
         }
         MethodData newmethod = new MethodData(myName, myType, argumentList);
         // checks method for all possible errors
-        parsedOk = parsedOk && evaluator.evaluateMethod(newmethod, myClass);
+        parsedOk = evaluator.evaluateMethod(newmethod, myClass) && parsedOk;
         myClass.addMethod(newmethod);
-        // checks if method is overriding another and for relevant errors
-        //parsedOk = parsedOk && evaluator.checkMethodOverriding(newmethod, myClass);
-
-        n.f7.accept(this, myClass.getName()+"."+newmethod.getName());
+        n.f7.accept(this, myClass.getName()+"."+newmethod.getName());   // passes scope in VarDeclaration
 
         return null;
     }
@@ -212,21 +209,22 @@ class MyVisitor extends GJDepthFirst<String, String> {
             {
                 String classname, method;
                 classname = scope.substring(0, scope.indexOf("."));
-                method = scope.substring(scope.indexOf("."), scope.length()-1);
+                method = scope.substring(scope.indexOf(".")+1, scope.length());
 
-                myClasses.searchClass(classname).searchMethod(method).addVariable(id, type);
+                MethodData methodData = myClasses.searchClass(classname).searchMethod(method);
+                parsedOk = evaluator.checkVarMethodDuplicates(id, methodData) && parsedOk;    // checks for variable duplicates
+                methodData.addVariable(id, type);    // adds var in method of class
             }
             else if (scope.equals("main"))
-                myClasses.getMainClass().addField(id, type, null);
+                myClasses.getMainClass().addField(id, type, null);  // adds var in main
             else // in class
             {
-                myClasses.searchClass(scope).addField(id, type, null);
+                ClassData aClass = myClasses.searchClass(scope);
+                parsedOk = evaluator.checkFieldDuplicates(id, aClass) && parsedOk;     // checks for duplicate fields
+                aClass.addField(id, type, null);       // adds new field in its class
             }
         }
-        else
-        {
-            System.out.println("WHYYY?");
-        }
+
         return null;
     }
 
@@ -236,12 +234,14 @@ class MyVisitor extends GJDepthFirst<String, String> {
      * f2 -> Expression()
      * f3 -> ";"
      */
-    /*public String visit(AssignmentStatement n, Void argu) throws Exception
+    public String visit(AssignmentStatement n, String argu) throws Exception
     {
         String id = n.f0.accept(this, argu);
         String expression = n.f2.accept(this, argu);
 
-    }*/
+        //evaluator.compareVariableTypes(id, expression);
+        return null;
+    }
 
 
     /****** data types ******

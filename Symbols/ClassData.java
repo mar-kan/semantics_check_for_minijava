@@ -101,4 +101,9 @@ public class ClassData {
     {
         return methods;
     }
+
+    public LinkedList<VariableData> getFields()
+    {
+        return fields;
+    }
 }
