@@ -28,5 +28,7 @@ The program checks:
     Class names for duplicates (also with the main class name).
     When classes that are inherited by others, that the class has already been declared.
     Method names for duplicates in the same scope.
-    Overriding methods to match the type and arguments (type / number) of the overrided method.
+    Overriding methods to match the type and arguments (type / number) of the overrided method (in any upperclass).
     Duplicate fields in classes.
+    Duplicate variables in methods.
+    Duplicate variables in main.

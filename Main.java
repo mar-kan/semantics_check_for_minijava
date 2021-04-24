@@ -63,4 +63,31 @@ public class Main {
             method_offset = aClass.printMethodOffsets(aClass.getName(), method_offset);
         }
     }
+
+    /** calculates the result of an expression **/
+    public static String calculateResult(String exp1, String exp2, String op, String type)
+    {
+        // types of expression have already been evaluated before entering this function
+        if (op.equals("&&"))
+        {
+            return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean(exp2));
+        }
+        if (op.equals("<"))
+        {
+            return String.valueOf(Integer.parseInt(exp1) < Integer.parseInt(exp2));
+        }
+        if (op.equals("+"))
+        {
+            return String.valueOf(Integer.parseInt(exp1) + Integer.parseInt(exp2));
+        }
+        if (op.equals("-"))
+        {
+            return String.valueOf(Integer.parseInt(exp1) - Integer.parseInt(exp2));
+        }
+        if (op.equals("*"))
+        {
+            return String.valueOf(Integer.parseInt(exp1) * Integer.parseInt(exp2));
+        }
+        return null;
+    }
 }

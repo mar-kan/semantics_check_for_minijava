@@ -1,6 +1,8 @@
 class Example1 {
     public static void main(String[] args) {
         int i;
+        boolean t;
+        t = true && false;
     }
 }
 
@@ -15,6 +17,15 @@ class Aa{
 class Bb extends Aa{
     A type;
     int k;
-    public int foo() {int i; int j; return k;}
+    public int foo() {
+        int i;
+        int j;
+        return k;
+    }
     public boolean bla() {return true;}
+}
+
+class Cc extends Bb{
+    int l;
+    public boolean bla() { return true; }
 }

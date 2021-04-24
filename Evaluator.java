@@ -56,6 +56,18 @@ public class Evaluator {
         return true;
     }
 
+    /** for allocation. checks if class name exists **/
+    public boolean checkForClass(String classname, MyClasses classes)
+    {
+        for (ClassData aClass : classes.getClasses())
+        {
+            if (aClass.getName().equals(classname))
+                return true;
+        }
+        System.err.println(file_name+":"+" error: Class "+classname+" doesn't exist.");
+        return false;
+    }
+
 
     /******** Method checking ********/
 
@@ -83,25 +95,30 @@ public class Evaluator {
             return true;
 
         boolean check = true;
-        for (MethodData ext_method : myClass.getExtending().getMethods())
+        ClassData temp = myClass.getExtending();
+        while (temp != null)    // checks every class until the superclass
         {
-            if (ext_method.getName().equals(method.getName()))  // checks names
+            for (MethodData ext_method : temp.getMethods())
             {
-                if (!ext_method.getType().equals(method.getType())) // checks types
+                if (ext_method.getName().equals(method.getName()))  // checks names
                 {
-                    System.err.println(file_name+":"+" error: \n\tMethod "+method.getName()+" has already been " +
-                            "declared in upperclass "+myClass.getExtending().getName()+" with type <"+ext_method.getType()
-                            +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with type <"
-                            +method.getType()+">.");
-                    check = false;
+                    if (!ext_method.getType().equals(method.getType())) // checks types
+                    {
+                        System.err.println(file_name+":"+" error: \n\tMethod "+method.getName()+" has already been " +
+                                "declared in upperclass "+temp.getName()+" with type <"+ext_method.getType()
+                                +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with type <"
+                                +method.getType()+">.");
+                        check = false;
+                    }
+
+                    check = checkOverridingArgs(ext_method, method, myClass) && check;    // checks methods' arguments
+
+                    if (check)
+                        method.setOverriding(true);
+                    return check;
                 }
-
-                check = checkOverridingArgs(ext_method, method, myClass) && check;    // checks methods' arguments
-
-                if (check)
-                    method.setOverriding(true);
-                return check;
             }
+            temp = temp.getExtending();
         }
         return true;
     }
@@ -160,6 +177,7 @@ public class Evaluator {
     /******** Variable checking ********/
     public boolean checkFieldDuplicates(String fieldname, ClassData classData)
     {
+        // checks fields
         for (VariableData field : classData.getFields())
         {
             if (field.getName().equals(fieldname))
@@ -223,7 +241,6 @@ public class Evaluator {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -233,6 +250,73 @@ public class Evaluator {
         {
             System.err.println(file_name+":"+" error: Variables "+var1+", "+var2+" must be of the same type.");
             return false;
+        }
+        return true;
+    }
+
+
+    /******** expression checking ********/
+
+    public boolean evaluateType(String id, String type, String scope, MyClasses myClasses)
+    {
+        // checks first if id is a literal value
+        if (type.equals("int"))
+        {
+            /*try
+            {
+               Integer.parseInt(id);
+            }
+            catch(ParseException ex)
+            {
+                return false;
+            }*/
+            // kai an to value toy id einai int
+
+            //if ()
+        }
+        else if (type.equals("boolean"))
+        {
+            if (id.equals("true") || id.equals("false"))
+                return true;
+
+        }
+        else if (type.equals("int[]"))
+        {
+
+        }
+        else if (type.equals("class"))
+        {
+            return checkForClass(id, myClasses);
+        }
+        else
+        {
+            System.out.println("error:<evaluateTye>: Wrong type inputted: "+type);
+            return false;
+        }
+
+        // checks variable type
+        if (scope.contains(".")) // in method of class
+        {
+            String classname, method;
+            classname = scope.substring(0, scope.indexOf("."));
+            method = scope.substring(scope.indexOf(".")+1, scope.length());
+
+            MethodData methodData = myClasses.searchClass(classname).searchMethod(method);
+            VariableData var = methodData.searchVariable(id);
+
+            return var.getType().equals(type);
+        }
+        else if (scope.equals("main"))  // in main
+        {
+            VariableData var = myClasses.getMainClass().searchVariable(id);
+            return var.getType().equals(type);
+        }
+        else // in class
+        {
+            ClassData aClass = myClasses.searchClass(scope);
+            VariableData var = aClass.searchVariable(id);
+
+            return var.getType().equals(type);
         }
         return true;
     }
