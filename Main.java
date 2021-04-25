@@ -64,13 +64,18 @@ public class Main {
         }
     }
 
-    /** calculates the result of an expression **/
+    /** calculates the result of an operation **/
     public static String calculateResult(String exp1, String exp2, String op, String type)
     {
         // types of expression have already been evaluated before entering this function
         if (op.equals("&&"))
         {
-            return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean(exp2));
+            /**if (exp1.equals("true") || exp1.equals("false"))
+            {
+                if (exp2.equals("true") || exp2.equals("false"))**/
+                    return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean(exp2));
+                //return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean());
+            //}
         }
         if (op.equals("<"))
         {

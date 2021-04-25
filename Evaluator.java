@@ -135,38 +135,38 @@ public class Evaluator {
                 System.err.println(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
                     "declared in upperclass "+myClass.getExtending().getName()+" without arguments.\n\t" + "Incompatible"+
                     " with declaration in class "+myClass.getName()+" with arguments: <"+
-                    submethod.argumentsToString()+">.\n\tMethods must have the same number of arguments.");
+                    submethod.getArguments_to_string()+">.\n\tMethods must have the same number of arguments.");
                 return false;
             }
         }
         if (submethod.getArguments() == null)
         {
             System.err.println(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.argumentsToString()
+                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.getArguments_to_string()
                     +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" without arguments.\n\t" +
                     "Methods must have the same number of arguments.");
             return false;
         }
 
         // checks if they have the same size
-        if (uppermethod.getArguments().length != submethod.getArguments().length)
+        if (uppermethod.getArguments().size() != submethod.getArguments().size())
         {
             System.err.println(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.argumentsToString()
+                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.getArguments_to_string()
                     +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with arguments: <"+
-                    submethod.argumentsToString()+">.\n\tMethods must have the same number of arguments.");
+                    submethod.getArguments_to_string()+">.\n\tMethods must have the same number of arguments.");
             return false;
         }
 
         // checks their types
-        for (int i=0; i<uppermethod.getArguments().length; i+=2)//checks types only
+        for (int i=0; i<uppermethod.getArguments().size(); i++)     // checks types only
         {
-            if (!uppermethod.getArguments()[i][0].equals(submethod.getArguments()[i][0]))
+            if (!uppermethod.getArguments().get(i).getType().equals(submethod.getArguments().get(i).getType()))
             {
                 System.err.println(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: "+uppermethod.argumentsToString()
+                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: "+uppermethod.getArguments_to_string()
                     +".\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with arguments: <"+
-                    submethod.argumentsToString()+">.\n\t"+uppermethod.getArguments()[i][1]+" must be of the same type.");
+                    submethod.getArguments_to_string()+">.\n\t"+uppermethod.getArguments().get(i).getName()+" must be of the same type.");
                 return false;
             }
         }
@@ -194,9 +194,9 @@ public class Evaluator {
         // checks in arguments
         if (method.getArguments() != null)
         {
-            for (String[] argument : method.getArguments())
+            for (VariableData argument : method.getArguments())
             {
-                if (argument[1].equals(varname))
+                if (argument.getName().equals(varname))
                 {
                     System.err.println(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+" as an argument.");
                     return false;
@@ -205,11 +205,11 @@ public class Evaluator {
         }
 
         // checks in variables
-        for (Map.Entry<String, String> entry : method.getVariables().entrySet())
+        for (VariableData var : method.getVariables())
         {
-            if (entry.getKey().equals(varname))
+            if (var.getName().equals(varname))
             {
-                System.err.println(file_name + ":" + " error: Variable " + varname + " was already defined in method " + method.getName() + ".");
+                System.err.println(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+".");
                 return false;
             }
         }
@@ -254,47 +254,13 @@ public class Evaluator {
         return true;
     }
 
-
-    /******** expression checking ********/
-
-    public boolean evaluateType(String id, String type, String scope, MyClasses myClasses)
+    public boolean compareVariableTypes(String id, String expr, String type, String scope, MyClasses myClasses)
     {
-        // checks first if id is a literal value
-        if (type.equals("int"))
-        {
-            /*try
-            {
-               Integer.parseInt(id);
-            }
-            catch(ParseException ex)
-            {
-                return false;
-            }*/
-            // kai an to value toy id einai int
+        if (scope == null)
+            return true;
 
-            //if ()
-        }
-        else if (type.equals("boolean"))
-        {
-            if (id.equals("true") || id.equals("false"))
-                return true;
-
-        }
-        else if (type.equals("int[]"))
-        {
-
-        }
-        else if (type.equals("class"))
-        {
-            return checkForClass(id, myClasses);
-        }
-        else
-        {
-            System.out.println("error:<evaluateTye>: Wrong type inputted: "+type);
-            return false;
-        }
-
-        // checks variable type
+        // finds variables
+        VariableData var1 = null, var2 = null;
         if (scope.contains(".")) // in method of class
         {
             String classname, method;
@@ -302,22 +268,186 @@ public class Evaluator {
             method = scope.substring(scope.indexOf(".")+1, scope.length());
 
             MethodData methodData = myClasses.searchClass(classname).searchMethod(method);
-            VariableData var = methodData.searchVariable(id);
 
-            return var.getType().equals(type);
+            var1 = methodData.searchVariable(id);
+            var2 = methodData.searchVariable(expr);
+        }
+        else if (scope.equals("main"))  // in main
+        {
+            var1 = myClasses.getMainClass().searchVariable(id);
+            var2 = myClasses.getMainClass().searchVariable(expr);
+        }
+        else // in class
+        {
+            ClassData aClass = myClasses.searchClass(scope);
+            var1 = aClass.searchVariable(id);
+            var2 = aClass.searchVariable(expr);
+        }
+
+        // compares values
+        switch (type)
+        {
+            case "int":
+                if (isLiteralInteger(id))
+                {
+                    if (isLiteralInteger(expr))
+                        return true;
+                    else
+                        return var2.getType().equals(type);
+                }
+                else if (isLiteralInteger(expr))
+                    return var1.getType().equals(type);
+                else
+                    return var1.getType().equals(var2.getType());
+
+            case "boolean":
+                if (isLiteralBoolean(id))
+                {
+                    if (isLiteralBoolean(expr))
+                        return true;
+                    else
+                        return var2.getType().equals(type);
+                }
+                else if (isLiteralBoolean(expr))
+                    return var1.getType().equals(type);
+                else
+                    return var1.getType().equals(var2.getType());
+
+            case "int[]":
+                if (isLiteralInteger(expr) || var2.getType().equals(type))
+                    return true;
+
+            case "class":   // checks only if the class was declared
+                if (checkForClass(id, myClasses) == checkForClass(expr, myClasses))
+                    return true;
+                else
+                {
+                    System.err.println(file_name+":"+" error: "+id+", "+expr+" must be of the same type.");
+                    return false;
+                }
+
+            default:
+                return false;
+        }
+    }
+
+
+    /******** expression checking ********/
+
+    public boolean evaluateType(String id, String type, String scope, MyClasses myClasses)
+    {
+        if (scope == null)
+            return true;
+
+        // checks first if id is a literal value
+        switch (type)
+        {
+            case "int":
+                if (isLiteralInteger(id))
+                    return true;
+                break;
+
+            case "boolean":
+                if (isLiteralBoolean(id))
+                    return true;
+                break;
+
+            /*case "int[]":
+                // no literal value for this case
+                break;*/
+
+            case "class":   // checks only if the class was declared
+                if (checkForClass(id, myClasses))
+                    return true;
+                else
+                {
+                    System.err.println(file_name + ":" + " error: Class " + id + " hasn't been declared.");
+                    return false;
+                }
+
+            default:
+                break;
+        }
+
+        // finds variable
+        if (scope.contains(".")) // in method of class
+        {
+            String classname, method;
+            classname = scope.substring(0, scope.indexOf("."));
+            method = scope.substring(scope.indexOf(".")+1, scope.length());
+
+            MethodData methodData = myClasses.searchClass(classname).searchMethod(method);
+
+            VariableData var = methodData.searchVariable(id);
+            if (var == null)
+            {
+                var = myClasses.searchClass(classname).searchVariable(id);
+                if (var == null)
+                {
+                    System.err.println(file_name + ":" + " error: Variable " + id + " has not been declared in this scope.");
+                    return false;
+                }
+            }
+            if (var.getType().equals(type))
+                return true;
+            else
+            {
+                System.err.println(file_name + ":" + " error: Variable "+id+" is of type "+var.getType()+".\n"+id+
+                        " should be of type "+type+".");
+                return false;
+            }
         }
         else if (scope.equals("main"))  // in main
         {
             VariableData var = myClasses.getMainClass().searchVariable(id);
-            return var.getType().equals(type);
+            if (var == null)
+            {
+                System.err.println(file_name + ":" + " error: Variable " + id + " has not been declared in this scope.");
+                return false;
+            }
+            if (var.getType().equals(type))
+                return true;
+            else
+            {
+                System.err.println(file_name + ":" + " error: Variable "+id+" is of type "+var.getType()+".\n"+id+
+                        " should be of type "+type+".");
+                return false;
+            }
         }
         else // in class
         {
             ClassData aClass = myClasses.searchClass(scope);
             VariableData var = aClass.searchVariable(id);
 
-            return var.getType().equals(type);
+            if (var == null)
+            {
+                System.err.println(file_name + ":" + " error: Variable " + id + " has not been declared in this scope.");
+                return false;
+            }
+            if (var.getType().equals(type))
+                return true;
+            else
+            {
+                System.err.println(file_name + ":" + " error: Variable "+id+" is of type "+var.getType()+".\n"+id+
+                        " should be of type "+type+".");
+                return false;
+            }
+        }
+    }
+
+    /** checks literal value of int **/
+    public boolean isLiteralInteger(String id)
+    {
+        for (int i=0; i<id.length(); i++)
+        {
+            if (id.charAt(i) < '0' || id.charAt(i) > '9')
+                return false;
         }
         return true;
+    }
+
+    public boolean isLiteralBoolean(String id)
+    {
+        return id.equals("true") || id.equals("false");
     }
 }

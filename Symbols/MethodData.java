@@ -1,24 +1,26 @@
 package Symbols;
 
-
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
+
 
 public class MethodData {
 
     private String name;
     private String type;
+    private String arguments_to_string;
     private boolean overriding;
-    private String[][] arguments;
-    private Map<String, String> variables;
+    private LinkedList<VariableData> arguments;
+    private LinkedList<VariableData> variables;
 
     public MethodData(String classname, String classtype, String args)
     {
         this.name = classname;
         this.type = classtype;
+        this.arguments_to_string = args;
         this.overriding = false;
-        this.variables = new HashMap<>();
+        this.arguments = new LinkedList<>();
+        this.variables = new LinkedList<>();
+
         if (args.equals(""))
         {
             this.arguments = null;
@@ -26,31 +28,38 @@ public class MethodData {
         }
 
         String[] split_args = args.split(" ");
-        this.arguments = new String[split_args.length/2][2];
-
-        int count=0;
         for (int i=1; i<split_args.length; i+=2)
         {
-            this.arguments[count][0] = split_args[i-1];
-            this.arguments[count][1] = split_args[i];
-            count++;
+            this.arguments.add(new VariableData(split_args[i-1], split_args[i], null));
         }
     }
 
-    public String argumentsToString()
+    /** searches list of variables for one named <varname> **/
+    public VariableData searchVariable(String varname)
     {
-        StringBuilder str = new StringBuilder();
-        for (String[] argument : arguments) {
-            str.append(argument[0]).append(" ");
-            str.append(argument[1]).append(" ");
+        // searches in arguments
+        if (arguments != null)
+        {
+            for (VariableData var : this.arguments)
+            {
+                if (var.getName().equals(varname))
+                    return var;
+            }
         }
-        return str.toString();
+
+        // searches in the rest variables
+        for (VariableData var : this.variables)
+        {
+            if (var.getName().equals(varname))
+                return var;
+        }
+        return null;
     }
 
     /** adds a variable to method **/
-    public void addVariable(String name, String type)
+    public void addVariable(String name, String type, String value)
     {
-        variables.put(name, type);
+        variables.add(new VariableData(name, type, value));
     }
 
 
@@ -76,13 +85,18 @@ public class MethodData {
         this.overriding = overriding;
     }
 
-    public String[][] getArguments()
+    public LinkedList<VariableData> getArguments()
     {
-        return this.arguments;
+        return arguments;
     }
 
-    public Map<String, String> getVariables()
+    public LinkedList<VariableData> getVariables()
     {
         return variables;
+    }
+
+    public String getArguments_to_string()
+    {
+        return arguments_to_string;
     }
 }

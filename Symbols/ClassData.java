@@ -39,6 +39,17 @@ public class ClassData {
         this.methods.add(method);
     }
 
+    /** searches list of variables for one named <varname> **/
+    public VariableData searchVariable(String varname)
+    {
+        for (VariableData var : fields)
+        {
+            if (var.getName().equals(varname))
+                return var;
+        }
+        return null;
+    }
+
     /** searches list of methods for one named <methodname> **/
     public MethodData searchMethod(String methodname)
     {
