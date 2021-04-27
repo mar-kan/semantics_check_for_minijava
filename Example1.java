@@ -1,9 +1,11 @@
 class Example1 {
     public static void main(String[] args) {
+        Aa a;
         boolean t;
+
         t = true;
         t = true && t;
-        Aa a = new Aa();
+        a = new Aa();
     }
 }
 

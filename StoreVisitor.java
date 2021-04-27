@@ -1,20 +1,21 @@
 import Symbols.ClassData;
 import Symbols.MethodData;
-import Symbols.MyClasses;
+import Symbols.AllClasses;
+import Symbols.VariableData;
 import visitor.*;
 import syntaxtree.*;
 
 
-class MyVisitor extends GJDepthFirst<String, String> {
-    private Evaluator evaluator;
-    private MyClasses myClasses;
-    private boolean parsedOk;
+class StoreVisitor extends GJDepthFirst<String, String> {
+    private DeclarationEvaluator declarationEvaluator;
 
-    MyVisitor(String filename)
+    private AllClasses allClasses = new AllClasses();
+    private boolean parsedOk = true;
+    private Utilities utils = new Utilities();
+
+    StoreVisitor(String filename)
     {
-        evaluator = new Evaluator(filename);
-        myClasses = new MyClasses();
-        parsedOk = true;
+        this.declarationEvaluator = new DeclarationEvaluator(filename);
     }
 
     /**
@@ -41,9 +42,9 @@ class MyVisitor extends GJDepthFirst<String, String> {
     public String visit(MainClass n, String argu) throws Exception
     {
         String classname = n.f1.accept(this, "main");
-        myClasses.setMain_class_name(classname);
+        allClasses.setMain_class_name(classname);
 
-        String args = n.f11.accept(this, "main");   // arguments?
+        allClasses.setMain_argument_var(n.f11.accept(this, "main"));   // arguments
 
         if (n.f14.present())
             n.f14.accept(this, "main");
@@ -69,8 +70,8 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String classname = n.f1.accept(this, null);
 
         // checks class for errors
-        parsedOk = evaluator.checkClassName(myClasses, classname, null) && parsedOk;
-        myClasses.addClass(classname, null);    // adds new class in list
+        parsedOk = declarationEvaluator.checkClassName(classname, null, allClasses) && parsedOk;
+        allClasses.addClass(classname, null);    // adds new class in list
 
         n.f3.accept(this, classname);
         n.f4.accept(this, classname);
@@ -96,8 +97,8 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String extend = n.f3.accept(this, classname);
 
         // checks class for errors
-        parsedOk = evaluator.checkClassName(myClasses, classname, extend) && parsedOk;
-        myClasses.addClass(classname, myClasses.searchClass(extend)); // adds new class in list
+        parsedOk = declarationEvaluator.checkClassName(classname, extend, allClasses) && parsedOk;
+        allClasses.addClass(classname, allClasses.searchClass(extend)); // adds new class in list
 
         n.f5.accept(this, classname);
         n.f6.accept(this, classname);
@@ -132,24 +133,20 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String myName = n.f2.accept(this, classname);
 
         // finds its class in MyClasses' list and adds the method there
-        ClassData myClass = myClasses.searchClass(classname);
+        ClassData myClass = allClasses.searchClass(classname);
         if (myClass == null)
         {
             System.out.println("Something went wrong with the classes");
             return null;
         }
-        MethodData newmethod = new MethodData(myName, myType, argumentList);
+
         // checks method for all possible errors
-        parsedOk = evaluator.evaluateMethod(newmethod, myClass) && parsedOk;
+        MethodData newmethod = new MethodData(myName, myType, argumentList);
+        parsedOk = declarationEvaluator.evaluateMethod(newmethod, myClass) && parsedOk;
         myClass.addMethod(newmethod);
 
         n.f7.accept(this, classname+"."+myName);   // passes scope in VarDeclaration
         n.f8.accept(this, classname+"."+myName);
-
-        String return_expr = n.f10.accept(this, classname+"."+myName);
-
-        parsedOk = evaluator.evaluateType(return_expr, newmethod.getType(),myClass.getName()+"."+
-                newmethod.getName(), myClasses) && parsedOk; // checks that method has the same ret type that was declared
 
         return null;
     }
@@ -225,29 +222,26 @@ class MyVisitor extends GJDepthFirst<String, String> {
         String type = n.f0.accept(this, scope);
         String id = n.f1.accept(this, scope);
 
-        if (scope != null)
+        if (scope.contains(".")) // in method of class
         {
-            if (scope.contains(".")) // in method of class
-            {
-                String classname, method;
-                classname = scope.substring(0, scope.indexOf("."));
-                method = scope.substring(scope.indexOf(".")+1, scope.length());
+            String classname, method;
+            classname = scope.substring(0, scope.indexOf("."));
+            method = scope.substring(scope.indexOf(".")+1, scope.length());
 
-                MethodData methodData = myClasses.searchClass(classname).searchMethod(method);
-                parsedOk = evaluator.checkVarMethodDuplicates(id, methodData) && parsedOk;    // checks for variable duplicates
-                methodData.addVariable(id, type, null);    // adds var in method of class
-            }
-            else if (scope.equals("main"))  // in main
-            {
-                parsedOk = evaluator.checkVarMainDuplicates(id, myClasses.getMainClass()) && parsedOk;    // checks for variable duplicates
-                myClasses.getMainClass().addField(id, type, null);  // adds var in main
-            }
-            else // in class
-            {
-                ClassData aClass = myClasses.searchClass(scope);
-                parsedOk = evaluator.checkFieldDuplicates(id, aClass) && parsedOk;     // checks for duplicate fields
-                aClass.addField(id, type, null);       // adds new field in its class
-            }
+            MethodData methodData = allClasses.searchClass(classname).searchMethod(method);
+            parsedOk = declarationEvaluator.checkVarMethodDuplicates(id, methodData) && parsedOk;    // checks for variable duplicates
+            methodData.addVariable(id, type);    // adds var in method of class
+        }
+        else if (scope.equals("main"))  // in main
+        {
+            parsedOk = declarationEvaluator.checkVarMainDuplicates(id, allClasses.getMainClass()) && parsedOk;    // checks for variable duplicates
+            allClasses.getMainClass().addField(id, type);  // adds var in main
+        }
+        else // in class
+        {
+            ClassData aClass = allClasses.searchClass(scope);
+            parsedOk = declarationEvaluator.checkFieldDuplicates(id, aClass) && parsedOk;     // checks for duplicate fields
+            aClass.addField(id, type);       // adds new field in its class
         }
         return null;
     }
@@ -279,53 +273,26 @@ class MyVisitor extends GJDepthFirst<String, String> {
             return null;
 
         String id = n.f0.accept(this, scope);
-        String expression = n.f2.accept(this, scope);
+        String expr_value = n.f2.accept(this, scope);
 
-        // find type
-        String type = null;
+        // find variable
+        VariableData var = null;
         if (scope.contains(".")) // in method of class
         {
             String classname, method;
             classname = scope.substring(0, scope.indexOf("."));
             method = scope.substring(scope.indexOf(".")+1, scope.length());
 
-            type = myClasses.searchClass(classname).searchMethod(method).searchVariable(id).getType();
+            var = allClasses.searchClass(classname).searchMethod(method).searchVariable(id); // checks method's variables
+            if (var == null)    // checks class' fields
+                var = allClasses.searchClass(classname).searchVariable(id);
         }
         else if (scope.equals("main"))  // in main
-        {
-            parsedOk = evaluator.checkVarMainDuplicates(id, myClasses.getMainClass()) && parsedOk;    // checks for variable duplicates
-            myClasses.getMainClass().addField(id, type, null);  // adds var in main
-
-            type = myClasses.getMainClass().searchVariable(id).getType();
-        }
+            var = allClasses.getMainClass().searchVariable(id);
         else // in class
-        {
-            ClassData aClass = myClasses.searchClass(scope);
-            type = aClass.searchVariable(id).getType();
-        }
-
-        // checks that they have the same type
-        parsedOk = evaluator.compareVariableTypes(id, expression, type, scope, myClasses) && parsedOk;
+            var = allClasses.searchClass(scope).searchVariable(id);
 
         return null;
-    }
-
-    /**
-     * f0 -> Identifier()
-     * f1 -> "["
-     * f2 -> Expression()
-     * f3 -> "]"
-     * f4 -> "="
-     * f5 -> Expression()
-     * f6 -> ";"
-     */
-    public String visit(ArrayAssignmentStatement n, String argu) throws Exception {
-        String _ret=null;
-        String id = n.f0.accept(this, argu);
-        String index = n.f2.accept(this, argu);
-        String expression = n.f5.accept(this, argu);
-
-        return _ret;
     }
 
 
@@ -358,15 +325,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         n.f1.accept(this, scope);
         String expr2 = n.f2.accept(this, scope);
 
-        // checks that both expression results evaluate to booleans
-        boolean parsedExpr = evaluator.evaluateType(expr1, "boolean", scope, myClasses);
-        parsedExpr = evaluator.evaluateType(expr2, "boolean", scope, myClasses) && parsedExpr;
-
-        parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return Main.calculateResult(expr1, expr2, "&&", "boolean"); // returns result of logic and
-        else
-            return "-1";
+        return expr1+"&&"+expr2;
     }
 
     /**
@@ -380,15 +339,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         n.f1.accept(this, scope);
         String expr2 = n.f2.accept(this, scope);
 
-        // checks that both expression results evaluate to ints
-        boolean parsedExpr = evaluator.evaluateType(expr1, "int", scope, myClasses);
-        parsedExpr = evaluator.evaluateType(expr2, "int", scope, myClasses) && parsedExpr;
-
-        parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return Main.calculateResult(expr1, expr2, "<", "int"); // returns result of comparison
-        else
-            return "-1";
+        return expr1+"<"+expr2;
     }
 
     /**
@@ -405,15 +356,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         n.f1.accept(this, scope);
         String expr2 = n.f2.accept(this, scope);
 
-        // checks that both expression results evaluate to ints
-        boolean parsedExpr = evaluator.evaluateType(expr1, "int", scope, myClasses);
-        parsedExpr = evaluator.evaluateType(expr2, "int", scope, myClasses) && parsedExpr;
-
-        parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return Main.calculateResult(expr1, expr2, "+", "int"); // returns result of addition
-        else
-            return "-1";
+        return expr1+"+"+expr2;
     }
 
     /**
@@ -427,15 +370,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         n.f1.accept(this, scope);
         String expr2 = n.f2.accept(this, scope);
 
-        // checks that both expression results evaluate to ints
-        boolean parsedExpr = evaluator.evaluateType(expr1, "int", scope, myClasses);
-        parsedExpr = evaluator.evaluateType(expr2, "int", scope, myClasses) && parsedExpr;
-
-        parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return Main.calculateResult(expr1, expr2, "-", "int"); // returns result of subtraction
-        else
-            return "-1";
+        return expr1+"-"+expr2;
     }
 
     /**
@@ -449,68 +384,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
         n.f1.accept(this, scope);
         String expr2 = n.f2.accept(this, scope);
 
-        // checks that both expression results evaluate to ints
-        boolean parsedExpr = evaluator.evaluateType(expr1, "int", scope, myClasses);
-        parsedExpr = evaluator.evaluateType(expr2, "int", scope, myClasses) && parsedExpr;
-
-        parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return Main.calculateResult(expr1, expr2, "*", "int"); // returns result of multiplication
-        else
-            return "-1";
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "["
-     * f2 -> PrimaryExpression()
-     * f3 -> "]"
-     */
-    public String visit(ArrayLookup n, String argu) throws Exception
-    {
-        String res = "";
-        res += n.f0.accept(this, argu);    // prepei na tsekarw oti E
-        n.f1.accept(this, argu);
-        res += "[";
-        res += n.f2.accept(this, argu);    // prepei na tsekarw oti einai int
-        n.f3.accept(this, argu);
-        res += "]";
-
-        return res;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "."
-     * f2 -> "length"
-     */
-    public String visit(ArrayLength n, String argu) throws Exception
-    {
-        String res = "";
-        res += n.f0.accept(this, argu); // prepei na tsekarw oti E k einai array
-        res += n.f1.accept(this, argu);
-        res += n.f2.accept(this, argu);
-        return res;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "."
-     * f2 -> Identifier()
-     * f3 -> "("
-     * f4 -> ( ExpressionList() )?
-     * f5 -> ")"
-     */
-    public String visit(MessageSend n, String argu) throws Exception
-    {
-        String res = "";
-        res += n.f0.accept(this, argu); // prepei na tsekarw polla
-        res += n.f1.accept(this, argu);
-        res += n.f2.accept(this, argu);
-        res += n.f3.accept(this, argu);
-        res += n.f4.accept(this, argu);
-        res += n.f5.accept(this, argu);
-        return res;
+        return expr1+"*"+expr2;
     }
 
     /**
@@ -593,40 +467,6 @@ class MyVisitor extends GJDepthFirst<String, String> {
     }
 
     /**
-     * f0 -> "new"
-     * f1 -> "int"
-     * f2 -> "["
-     * f3 -> Expression()
-     * f4 -> "]"
-     */
-    public String visit(ArrayAllocationExpression n, String scope) throws Exception
-    {
-        String res = "";                                // builds string
-        res += n.f0.accept(this, scope);
-        res += n.f1.accept(this, scope);
-        res += n.f2.accept(this, scope);
-        String expr = n.f3.accept(this, scope);
-        res += expr;
-
-        parsedOk = evaluator.evaluateType(expr, "int", scope, myClasses) && parsedOk; // checks that f3 has an integer value
-
-        return res;
-    }
-
-    /**
-     * f0 -> "new"
-     * f1 -> Identifier()
-     * f2 -> "("
-     * f3 -> ")"
-     */
-    public String visit(AllocationExpression n, String scope) throws Exception
-    {
-        String id = n.f1.accept(this, scope);
-        // parsedOk = evaluator.checkForClass(id, myClasses) && parsedOk; // allocations are checked later
-        return "new"+id+"()";
-    }
-
-    /**
      * f0 -> "!"
      * f1 -> PrimaryExpression()
      */
@@ -642,7 +482,7 @@ class MyVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(BracketExpression n, String argu) throws Exception
     {
-        return "("+n.f1.accept(this, argu)+")";
+        return n.f1.accept(this, argu);
     }
 
     /******** data types ********
@@ -686,15 +526,14 @@ class MyVisitor extends GJDepthFirst<String, String> {
     }
 
 
-    /****** setters / getters ******/
+    /** getters **/
+    public AllClasses getAllClasses()
+    {
+        return allClasses;
+    }
 
     public boolean isParsedOk()
     {
         return parsedOk;
-    }
-
-    public MyClasses getMyClasses()
-    {
-        return myClasses;
     }
 }

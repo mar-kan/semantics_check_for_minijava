@@ -3,14 +3,15 @@ package Symbols;
 import java.util.LinkedList;
 
 
-public class MyClasses {
+public class AllClasses {
 
     String main_class_name;
     private ClassData mainClass;
     private LinkedList<ClassData> classes;
+    private String main_argument_var;
 
 
-    public MyClasses()
+    public AllClasses()
     {
         this.main_class_name = "";
         this.mainClass = new ClassData("main", null);
@@ -37,6 +38,33 @@ public class MyClasses {
         return null;
     }
 
+    /** finds variable anywhere in the classes according to <scope> **/
+    public VariableData findVariable(String id, String scope)
+    {
+        VariableData var;
+
+        if (scope.contains(".")) // in method of class
+        {
+            String classname, method;
+            classname = scope.substring(0, scope.indexOf("."));
+            method = scope.substring(scope.indexOf(".")+1, scope.length());
+
+            MethodData methodData = searchClass(classname).searchMethod(method);
+
+            var = methodData.searchVariable(id);
+            if (var == null)
+                var = searchClass(classname).searchVariable(id);
+        }
+        else if (scope.equals("main"))  // in main
+            var = mainClass.searchVariable(id);
+        else // in class
+        {
+            ClassData aClass = searchClass(scope);
+            var = aClass.searchVariable(id);
+        }
+        return var;
+    }
+
     /** setters and getters **/
     public void setMain_class_name(String mainname)
     {
@@ -56,5 +84,15 @@ public class MyClasses {
     public ClassData getMainClass()
     {
         return mainClass;
+    }
+
+    public void setMain_argument_var(String main_argument_var)
+    {
+        this.main_argument_var = main_argument_var;
+    }
+
+    public String getMain_argument_var()
+    {
+        return main_argument_var;
     }
 }
