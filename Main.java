@@ -4,15 +4,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import static java.lang.System.exit;
-
 public class Main {
     public static void main(String[] args) throws Exception {
         if(args.length != 1){
             System.err.println("Usage: java Main <inputFile>");
-            exit(1);
+            System.exit(1);
         }
 
+        Utilities utils = new Utilities();
         FileInputStream fis = null;
         try{
             for (String arg : args)
@@ -21,20 +20,26 @@ public class Main {
                 MiniJavaParser parser = new MiniJavaParser(fis);
 
                 Goal root = parser.Goal();
-
                 System.out.println();
-                MyVisitor eval = new MyVisitor(arg);
+
+                // 1st visitor stores all values in classes of package Symbols
+                StoreVisitor store = new StoreVisitor(arg);    // passes filename for error messages
+                root.accept(store, null);
+
+                // 2nd visitor evaluates all variables
+                EvalVisitor eval = new EvalVisitor(arg, store.getAllClasses());
                 root.accept(eval, null);
 
-                if (!eval.isParsedOk())
+                if (!store.isParsedOk() || !eval.isParsedOk())
                 {
                     System.err.println("\nProgram failed to parse.");
-                    exit(-1);
+                    System.exit(-1);
                 }
 
+                // prints offsets only if the program parsed successfully
                 System.err.println("Program parsed successfully.");
                 System.out.println();
-                printClassOffsets(eval);
+                utils.printClassOffsets(eval);
             }
         }
         catch(ParseException ex){
@@ -51,48 +56,5 @@ public class Main {
                 System.err.println(ex.getMessage());
             }
         }
-    }
-
-    /** printing offsets function **/
-    public static void printClassOffsets(MyVisitor eval)
-    {
-        int var_offset = 0, method_offset = 0;
-        for (ClassData aClass : eval.getMyClasses().getClasses())
-        {
-            var_offset = aClass.printVarOffsets(aClass.getName(), var_offset);
-            method_offset = aClass.printMethodOffsets(aClass.getName(), method_offset);
-        }
-    }
-
-    /** calculates the result of an operation **/
-    public static String calculateResult(String exp1, String exp2, String op, String type)
-    {
-        // types of expression have already been evaluated before entering this function
-        if (op.equals("&&"))
-        {
-            /**if (exp1.equals("true") || exp1.equals("false"))
-            {
-                if (exp2.equals("true") || exp2.equals("false"))**/
-                    return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean(exp2));
-                //return String.valueOf(Boolean.parseBoolean(exp1) && Boolean.parseBoolean());
-            //}
-        }
-        if (op.equals("<"))
-        {
-            return String.valueOf(Integer.parseInt(exp1) < Integer.parseInt(exp2));
-        }
-        if (op.equals("+"))
-        {
-            return String.valueOf(Integer.parseInt(exp1) + Integer.parseInt(exp2));
-        }
-        if (op.equals("-"))
-        {
-            return String.valueOf(Integer.parseInt(exp1) - Integer.parseInt(exp2));
-        }
-        if (op.equals("*"))
-        {
-            return String.valueOf(Integer.parseInt(exp1) * Integer.parseInt(exp2));
-        }
-        return null;
     }
 }

@@ -30,7 +30,10 @@ public class MethodData {
         String[] split_args = args.split(" ");
         for (int i=1; i<split_args.length; i+=2)
         {
-            this.arguments.add(new VariableData(split_args[i-1], split_args[i], null));
+            if (split_args[i].contains(","))    // removes commas
+                split_args[i] = split_args[i].substring(0, split_args[i].indexOf(","));
+
+            this.arguments.add(new VariableData(split_args[i], split_args[i-1]));
         }
     }
 
@@ -53,13 +56,14 @@ public class MethodData {
             if (var.getName().equals(varname))
                 return var;
         }
+        // test21.start()
         return null;
     }
 
     /** adds a variable to method **/
-    public void addVariable(String name, String type, String value)
+    public void addVariable(String name, String type)
     {
-        variables.add(new VariableData(name, type, value));
+        variables.add(new VariableData(name, type));
     }
 
 

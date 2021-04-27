@@ -11,7 +11,6 @@ public class ClassData {
     private LinkedList<VariableData> fields;
     private LinkedList<MethodData> methods;
 
-
     public ClassData(String class_name, ClassData extend)
     {
         this.name = class_name;
@@ -21,9 +20,9 @@ public class ClassData {
     }
 
     /** adds a field in list fields **/
-    public void addField(String var_name, String var_type, String var_value)
+    public void addField(String var_name, String var_type)
     {
-        this.fields.add(new VariableData(var_name, var_type, var_value));
+        this.fields.add(new VariableData(var_name, var_type));
     }
 
     /** adds a method in list methods **/
