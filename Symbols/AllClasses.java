@@ -8,7 +8,6 @@ public class AllClasses {
     String main_class_name;
     private ClassData mainClass;
     private LinkedList<ClassData> classes;
-    private String main_argument_var;
 
 
     public AllClasses()
@@ -84,15 +83,5 @@ public class AllClasses {
     public ClassData getMainClass()
     {
         return mainClass;
-    }
-
-    public void setMain_argument_var(String main_argument_var)
-    {
-        this.main_argument_var = main_argument_var;
-    }
-
-    public String getMain_argument_var()
-    {
-        return main_argument_var;
     }
 }

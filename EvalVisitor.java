@@ -144,7 +144,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedOk = expressionEvaluator.evaluateType(return_expr, method.getType(),myClass.getName()+"."+
                 method.getName()) && parsedOk; // checks that method has the same ret type that was declared
 
-        return null;
+        return method.getType();
     }
 
 
@@ -233,7 +233,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         String expression = n.f2.accept(this, scope);
 
         // finds type of id
-        String type = null;
+        String type;
         if (scope.contains(".")) // in method of class
         {
             String classname, method;
@@ -264,7 +264,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         // checks that they have the same type
         parsedOk = expressionEvaluator.compareVariableTypes(id, expression, type, scope) && parsedOk;
 
-        return null;
+        return type;
     }
 
     /**
@@ -278,7 +278,6 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(ArrayAssignmentStatement n, String scope) throws Exception
     {
-        String _ret=null;
         String id = n.f0.accept(this, scope);
         parsedOk = expressionEvaluator.evaluateType(id, "int[]", scope) && parsedOk;
 
@@ -287,7 +286,69 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
 
         String expression = n.f5.accept(this, scope);
         parsedOk = expressionEvaluator.evaluateType(expression, "int", scope) && parsedOk;
+        return "int[]";
+    }
+
+    /**
+     * f0 -> "if"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     * f5 -> "else"
+     * f6 -> Statement()
+     */
+    public String visit(IfStatement n, String argu) throws Exception
+    {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);    // evaluate logical expression?
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        n.f5.accept(this, argu);
+        n.f6.accept(this, argu);
         return _ret;
+    }
+
+    /**
+     * f0 -> "while"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> Statement()
+     */
+    public String visit(WhileStatement n, String argu) throws Exception
+    {
+        String _ret=null;
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        n.f2.accept(this, argu);    // evaluate logical expr??
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        return _ret;
+    }
+
+    /**
+     * f0 -> "System.out.println"
+     * f1 -> "("
+     * f2 -> Expression()
+     * f3 -> ")"
+     * f4 -> ";"
+     */
+    public String visit(PrintStatement n, String argu) throws Exception
+    {
+        n.f0.accept(this, argu);
+        n.f1.accept(this, argu);
+        String expr = n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+
+        if (!expr.equals("int") && !expr.equals("boolean") && !expr.equals("int[]"))
+            // object
+            System.err.println(file_name+": error: Print statement cannot contain object: "+expr+".");
+
+        return expr;
     }
 
 
@@ -306,8 +367,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(Expression n, String argu) throws Exception
     {
-        String str =  n.f0.accept(this, argu);
-        return str;
+        return n.f0.accept(this, argu);
     }
 
     /**
@@ -327,10 +387,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedExpr = expressionEvaluator.evaluateType(expr2, "boolean", scope) && parsedExpr;
 
         parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return expr1+"&&"+expr2;
-        else
-            return "-1";
+        return "boolean";
     }
 
     /**
@@ -349,10 +406,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedExpr = expressionEvaluator.evaluateType(expr2, "int", scope) && parsedExpr;
 
         parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return expr1+"<"+expr2;
-        else
-            return "-1";
+        return "boolean";
     }
 
     /**
@@ -374,10 +428,8 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedExpr = expressionEvaluator.evaluateType(expr2, "int", scope) && parsedExpr;
 
         parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return expr1+"+"+expr2;
-        else
-            return "-1";
+        return "int";
+
     }
 
     /**
@@ -396,10 +448,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedExpr = expressionEvaluator.evaluateType(expr2, "int", scope) && parsedExpr;
 
         parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return expr1+"-"+expr2;
-        else
-            return "-1";
+        return "int";
     }
 
     /**
@@ -418,10 +467,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
         parsedExpr = expressionEvaluator.evaluateType(expr2, "int", scope) && parsedExpr;
 
         parsedOk = parsedExpr && parsedOk;
-        if (parsedExpr)
-            return expr1+"*"+expr2;
-        else
-            return "-1";
+        return "int";
     }
 
     /**
@@ -430,17 +476,25 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      * f3 -> "]"
      */
-    public String visit(ArrayLookup n, String argu) throws Exception
+    public String visit(ArrayLookup n, String scope) throws Exception
     {
-        String res = "";
-        res += n.f0.accept(this, argu);    // prepei na tsekarw oti E
-        n.f1.accept(this, argu);
-        res += "[";
-        res += n.f2.accept(this, argu);    // prepei na tsekarw oti einai int
-        n.f3.accept(this, argu);
-        res += "]";
+        String arrayName = n.f0.accept(this, scope);
+        VariableData array = allClasses.findVariable(arrayName, scope);
+        if (array == null)  // checks that array exists
+        {
+            System.err.println(file_name+": error: Array "+arrayName+" hasn't been declared in this scope.");
+            parsedOk = false;
+        }
+        else if (!array.getType().equals("int[]"))  // checks that it is an array
+        {
+            System.err.println(file_name+": error: Variable "+arrayName+" should be of type int[].");
+            parsedOk = false;
+        }
 
-        return res;
+        String index = n.f2.accept(this, scope);    // checks that it is an integer
+        parsedOk = expressionEvaluator.evaluateType(index, "int", scope) && parsedOk;
+
+        return "int[]";
     }
 
     /**
@@ -448,13 +502,22 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      * f1 -> "."
      * f2 -> "length"
      */
-    public String visit(ArrayLength n, String argu) throws Exception
+    public String visit(ArrayLength n, String scope) throws Exception
     {
-        String res = "";
-        res += n.f0.accept(this, argu); // prepei na tsekarw oti E k einai array
-        res += n.f1.accept(this, argu);
-        res += n.f2.accept(this, argu);
-        return res;
+        String arrayName = n.f0.accept(this, scope);
+        VariableData array = allClasses.findVariable(arrayName, scope);
+        if (array == null)  // checks that array exists
+        {
+            System.err.println(file_name+": error: Array "+arrayName+" hasn't been declared in this scope.");
+            parsedOk = false;
+        }
+        else if (!array.getType().equals("int[]"))  // checks that it is an array
+        {
+            System.err.println(file_name+": error: Variable "+arrayName+" should be of type int[].");
+            parsedOk = false;
+        }
+
+        return "int";
     }
 
     /**
@@ -465,17 +528,39 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      * f4 -> ( ExpressionList() )?
      * f5 -> ")"
      */
-    public String visit(MessageSend n, String argu) throws Exception
+    public String visit(MessageSend n, String scope) throws Exception
     {
-        String res = "";
-        res += n.f0.accept(this, argu); // prepei na tsekarw polla
-        res += ".";
-        res += n.f2.accept(this, argu);
-        res += "(";
+        // f0 can be class of 'this'
+        String classname = n.f0.accept(this, scope);
+        if (classname.equals("this"))
+            classname = scope.substring(0, scope.indexOf("."));
+
+        // checking that class exists
+        ClassData myClass = allClasses.searchClass(classname);
+        if (myClass == null)
+        {
+            System.err.println(file_name+": error: Class "+classname+" doesn't exist.");
+            parsedOk = false;
+            return null;
+        }
+
+        // f2 can be a method
+        String methodname = n.f2.accept(this, scope);
+
+        // f4 is arguments or ""
+        String method_arguments;
         if (n.f4.present())
-            res += n.f4.accept(this, argu);
-        res += ")";
-        return res;
+            method_arguments = n.f4.accept(this, scope);
+        else
+            method_arguments = null;
+
+        MethodData myMethod = expressionEvaluator.checkMethodCall(methodname, scope);
+        if (myMethod == null)
+        {
+            parsedOk = false;
+            return null;
+        }
+        return myMethod.getType();
     }
 
     /**
@@ -594,7 +679,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(NotExpression n, String argu) throws Exception
     {
-        return "!"+n.f1.accept(this, argu);
+        return n.f1.accept(this, argu);
     }
 
     /**
@@ -604,7 +689,7 @@ public class EvalVisitor extends GJDepthFirst<String, String> {
      */
     public String visit(BracketExpression n, String argu) throws Exception
     {
-        return "n.f1.accept(this, argu)";
+        return n.f1.accept(this, argu);
     }
 
     /******** data types ********

@@ -79,19 +79,6 @@ public class ExpressionEvaluator {
         VariableData var1 = allClasses.findVariable(id, scope);
         VariableData var2 = allClasses.findVariable(expr, scope);
 
-        /** checks for main arguments **/
-        if (scope.equals("main") && id.equals(allClasses.getMain_argument_var()))
-        {
-            System.err.println(file_name+":"+" error: Main Argument "+id+" is of type String[].\nShould be of type "
-                    +type+".");
-            return false;
-        }
-        if (scope.equals("main") && expr.equals(allClasses.getMain_argument_var()))
-        {
-            System.err.println(file_name+":"+" error: Main Argument "+expr+" is of type String[].\nShould be of type "
-                    +type+".");
-            return false;
-        }
         /** comparing their types **/
         switch (type)
         {
@@ -159,7 +146,7 @@ public class ExpressionEvaluator {
                         }
                     }
                     /** comparing class types **/
-                    if (checkForClass(var1.getType()) == checkForClass(var2.getType()) && var1.getType().equals(var2.getType()))
+                    if (var1.getType().equals(var2.getType()) && checkForClass(var1.getType()) == checkForClass(var2.getType()))
                         return true;
                     else
                     {
@@ -204,7 +191,9 @@ public class ExpressionEvaluator {
             case "int[]":
                 // no literal value for this case
                 break;
-            default:
+            default:    // class
+                if (id.equals("this"))
+                    return true;
                 break;
         }
 
@@ -214,6 +203,11 @@ public class ExpressionEvaluator {
         // finds variable
         if (allClasses.findVariable(id, scope) == null)
         {
+            if (utils.isLiteralBoolean(id))
+            {
+                System.err.println(file_name+":"+" error: Required int, but found boolean: <"+id+">.");
+                return false;
+            }
             System.err.println(file_name+":"+" error: Variable "+id+" hasn't been declared in this scope.");
             return false;
         }
@@ -272,48 +266,45 @@ public class ExpressionEvaluator {
 
     public boolean compareInts(String id, String expr, VariableData var1, VariableData var2)
     {
-        if (!utils.isLiteralInteger(id) && var1 == null)   // id doesnt exist
+        if (!utils.isLiteralInteger(id) && var1 == null && !id.equals("int"))   // id doesnt exist
         {
             System.err.println(file_name+":"+" error: Variable "+id+" hasn't been declared in this scope.");
             return false;
         }
-        if (!utils.isLiteralInteger(expr) && var2 == null)   // expr doesnt exist
+        if (!utils.isLiteralInteger(expr) && var2 == null && !expr.equals("int"))   // expr doesnt exist
         {
             System.err.println(file_name+":"+" error: Variable "+expr+" hasn't been declared in this scope.");
             return false;
         }
-        if (utils.isLiteralInteger(id)) // id is literal
+        if (utils.isLiteralInteger(id) || id.equals("int")) // id is literal or int
         {
             if (utils.isLiteralInteger(expr))   // expr also literal
                 return true;
 
+            if (expr.equals("int"))
+                return true;
+
             if (var2.getType().equals("int"))    // expr is int variable
                 return true;
-            else
-            {
-                System.err.println(file_name+":"+" error: Required int"+", but found "+var2.getType()+": "+var2.getName());
-                return false;
-            }
+
+            System.err.println(file_name+":"+" error: Required int"+", but found "+var2.getType()+": "+var2.getName());
+            return false;
         }
-        else if (utils.isLiteralInteger(expr))  // expr is literal
+        else if (utils.isLiteralInteger(expr) || expr.equals("int"))  // expr is literal or int
         {
             if (var1.getType().equals("int"))    // id is int variable
                 return true;
-            else
-            {
-                System.err.println(file_name+":"+" error: Required "+var1.getType()+", but found int: "+var2.getName());
-                return false;
-            }
+
+            System.err.println(file_name+":"+" error: Required "+var1.getType()+", but found int: "+var2.getName());
+            return false;
         }
         else
         {
             if (var2.getType().equals("int") && var1.getType().equals("int"))    // both are int variables
                 return true;
-            else
-            {
-                System.err.println(file_name+":"+" error: Required "+var1.getType()+", but found "+var2.getType()+": "+var2.getName());
-                return false;
-            }
+
+            System.err.println(file_name+":"+" error: Required "+var1.getType()+", but found "+var2.getType()+": "+var2.getName());
+            return false;
         }
     }
 
@@ -323,7 +314,7 @@ public class ExpressionEvaluator {
         MethodData exprMethod = checkMethodCall(expr, scope);
         if (exprMethod == null)
         {
-            System.err.println(file_name+":"+" error: Method "+methodname+" has not been declared in this scope.");
+            //System.err.println(file_name+":"+" error: Method "+methodname+" has not been declared in this scope.");
             return false;
         }
 
@@ -331,13 +322,6 @@ public class ExpressionEvaluator {
         VariableData varId = allClasses.findVariable(id, scope);
         if (varId == null)
         {
-            /** checks for main's argument **/
-            if (scope.equals("main") && id.equals(allClasses.getMain_argument_var()))
-            {
-                System.err.println(file_name+":"+" error: Main Argument "+id+" is of type String[].\nShould be the same type"+
-                        "with method "+methodname+".");
-                return false;
-            }
             System.err.println(file_name+":"+" error: Variable "+id+" has not been declared in this scope.");
             return false;
         }
@@ -358,8 +342,17 @@ public class ExpressionEvaluator {
 
         String objectname = id.substring(0, id.indexOf("."));
         String methodname = id.substring(id.indexOf(".")+1, id.indexOf("("));
-        String arguments = id.substring(id.indexOf("(")+1, id.indexOf(")"));
-/*** id = (!(current_node.GetHas_Right()));***/
+        id = id.substring(id.indexOf("("), id.length());
+
+        String arguments;
+        if (id.equals("("))
+            arguments = "";
+        else
+            arguments = id.substring(id.indexOf("(")+1, id.indexOf(")"));
+
+        if (id.contains(".") && !arguments.contains("."))  // more method calls
+            return checkMethodCall(objectname+id.substring(id.indexOf("."), id.length()), scope);
+
         // finds object objectname
         VariableData obj = allClasses.findVariable(objectname, scope);
         if (obj == null)
@@ -368,6 +361,11 @@ public class ExpressionEvaluator {
             {
                 String classname = scope.substring(0, scope.indexOf("."));
                 myClass = allClasses.searchClass(classname);
+                if (myClass == null)
+                {
+                    System.err.println(file_name+":"+" error: Class "+classname+" doesn't exist.");
+                    return null;
+                }
             }
             else
             {
@@ -395,10 +393,7 @@ public class ExpressionEvaluator {
 
         // checks the arguments
         if (!compareMethodArgs(myMethod.getArguments(), arguments, scope, methodname))
-        {
-            System.err.println(file_name+":"+" error: Method "+methodname+"'s arguments should match the given argument types.");
             return null;
-        }
 
         return myMethod;
     }
@@ -443,13 +438,7 @@ public class ExpressionEvaluator {
                             "of type "+methodArgs.get(i).getType()+".");
                     return false;
                 }
-                /** checks for main's argument **/
-                if (scope.equals("main") && split_args[i].equals(allClasses.getMain_argument_var()))
-                {
-                    System.err.println(file_name+":"+" error: Main Argument "+split_args[i]+" is of type String[].\nShould be the same type"+
-                            "with method "+methodname+".");
-                    return false;
-                }
+
                 /** checks for method call **/
                 if (split_args[i].contains("."))
                     return compareMethodCall(methodArgs.get(i).getName(), split_args[i], scope);

@@ -44,8 +44,6 @@ class StoreVisitor extends GJDepthFirst<String, String> {
         String classname = n.f1.accept(this, "main");
         allClasses.setMain_class_name(classname);
 
-        allClasses.setMain_argument_var(n.f11.accept(this, "main"));   // arguments
-
         if (n.f14.present())
             n.f14.accept(this, "main");
 
