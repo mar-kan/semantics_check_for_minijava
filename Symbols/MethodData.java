@@ -5,9 +5,9 @@ import java.util.LinkedList;
 
 public class MethodData {
 
-    private String name;
-    private String type;
-    private String arguments_to_string;
+    private final String name;
+    private final String type;
+    private final String arguments_to_string;
     private boolean overriding;
     private LinkedList<VariableData> arguments;
     private LinkedList<VariableData> variables;

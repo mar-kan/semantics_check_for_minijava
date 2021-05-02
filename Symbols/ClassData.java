@@ -1,13 +1,12 @@
 package Symbols;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 
 
 public class ClassData {
 
-    private String name;
-    private ClassData extending;
+    private final String name;
+    private final ClassData extending;
     private LinkedList<VariableData> fields;
     private LinkedList<MethodData> methods;
 
@@ -15,8 +14,8 @@ public class ClassData {
     {
         this.name = class_name;
         this.extending = extend;
-        this.fields = new LinkedList<VariableData>();
-        this.methods = new LinkedList<MethodData>();
+        this.fields = new LinkedList<>();
+        this.methods = new LinkedList<>();
     }
 
     /** adds a field in list fields **/
@@ -26,13 +25,6 @@ public class ClassData {
     }
 
     /** adds a method in list methods **/
-    public MethodData addMethod(String method_name, String method_type, String args)
-    {
-        MethodData newmethod = new MethodData(method_name, method_type, args);
-        this.methods.add(newmethod);
-        return newmethod;
-    }
-
     public void addMethod(MethodData method)
     {
         this.methods.add(method);
@@ -46,6 +38,10 @@ public class ClassData {
             if (var.getName().equals(varname))
                 return var;
         }
+
+        if (extending != null)  // checks superclass' fields
+            return extending.searchVariable(varname);
+
         return null;
     }
 
@@ -116,4 +112,6 @@ public class ClassData {
     {
         return fields;
     }
+
+
 }

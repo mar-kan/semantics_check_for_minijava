@@ -14,15 +14,14 @@ public class AllClasses {
     {
         this.main_class_name = "";
         this.mainClass = new ClassData("main", null);
-        this.classes = new LinkedList<ClassData>();
+        this.classes = new LinkedList<>();
     }
 
     /** adds a class in classes list **/
-    public ClassData addClass(String classname, ClassData classtype)
+    public void addClass(String classname, ClassData classtype)
     {
         ClassData newclass = new ClassData(classname, classtype);
         this.classes.add(newclass);
-        return new ClassData(classname, classtype);
     }
 
     /** searches list class for a ClassData with name = classname **/
@@ -40,6 +39,9 @@ public class AllClasses {
     /** finds variable anywhere in the classes according to <scope> **/
     public VariableData findVariable(String id, String scope)
     {
+        if (scope == null)
+            return null;
+
         VariableData var;
 
         if (scope.contains(".")) // in method of class

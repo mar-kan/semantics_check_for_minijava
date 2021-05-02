@@ -3,8 +3,8 @@ package Symbols;
 
 public class VariableData {
 
-    private String name;
-    private String type;
+    private final String name;
+    private final String type;
 
 
     public VariableData(String varname, String vartype)

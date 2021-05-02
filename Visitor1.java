@@ -6,14 +6,12 @@ import visitor.*;
 import syntaxtree.*;
 
 
-class StoreVisitor extends GJDepthFirst<String, String> {
+class Visitor1 extends GJDepthFirst<String, String> {
     private DeclarationEvaluator declarationEvaluator;
-
     private AllClasses allClasses = new AllClasses();
-    private boolean parsedOk = true;
-    private Utilities utils = new Utilities();
 
-    StoreVisitor(String filename)
+
+    Visitor1(String filename)
     {
         this.declarationEvaluator = new DeclarationEvaluator(filename);
     }
@@ -68,7 +66,7 @@ class StoreVisitor extends GJDepthFirst<String, String> {
         String classname = n.f1.accept(this, null);
 
         // checks class for errors
-        parsedOk = declarationEvaluator.checkClassName(classname, null, allClasses) && parsedOk;
+        declarationEvaluator.checkClassName(classname, null, allClasses);
         allClasses.addClass(classname, null);    // adds new class in list
 
         n.f3.accept(this, classname);
@@ -95,7 +93,7 @@ class StoreVisitor extends GJDepthFirst<String, String> {
         String extend = n.f3.accept(this, classname);
 
         // checks class for errors
-        parsedOk = declarationEvaluator.checkClassName(classname, extend, allClasses) && parsedOk;
+        declarationEvaluator.checkClassName(classname, extend, allClasses);
         allClasses.addClass(classname, allClasses.searchClass(extend)); // adds new class in list
 
         n.f5.accept(this, classname);
@@ -140,7 +138,7 @@ class StoreVisitor extends GJDepthFirst<String, String> {
 
         // checks method for all possible errors
         MethodData newmethod = new MethodData(myName, myType, argumentList);
-        parsedOk = declarationEvaluator.evaluateMethod(newmethod, myClass) && parsedOk;
+        declarationEvaluator.evaluateMethod(newmethod, myClass);
         myClass.addMethod(newmethod);
 
         n.f7.accept(this, classname+"."+myName);   // passes scope in VarDeclaration
@@ -227,18 +225,18 @@ class StoreVisitor extends GJDepthFirst<String, String> {
             method = scope.substring(scope.indexOf(".")+1, scope.length());
 
             MethodData methodData = allClasses.searchClass(classname).searchMethod(method);
-            parsedOk = declarationEvaluator.checkVarMethodDuplicates(id, methodData) && parsedOk;    // checks for variable duplicates
+            declarationEvaluator.checkVarMethodDuplicates(id, methodData);    // checks for variable duplicates
             methodData.addVariable(id, type);    // adds var in method of class
         }
         else if (scope.equals("main"))  // in main
         {
-            parsedOk = declarationEvaluator.checkVarMainDuplicates(id, allClasses.getMainClass()) && parsedOk;    // checks for variable duplicates
+            declarationEvaluator.checkVarMainDuplicates(id, allClasses.getMainClass());    // checks for variable duplicates
             allClasses.getMainClass().addField(id, type);  // adds var in main
         }
         else // in class
         {
             ClassData aClass = allClasses.searchClass(scope);
-            parsedOk = declarationEvaluator.checkFieldDuplicates(id, aClass) && parsedOk;     // checks for duplicate fields
+            declarationEvaluator.checkFieldDuplicates(id, aClass);     // checks for duplicate fields
             aClass.addField(id, type);       // adds new field in its class
         }
         return null;
@@ -257,40 +255,6 @@ class StoreVisitor extends GJDepthFirst<String, String> {
     public String visit(Statement n, String argu) throws Exception
     {
         return n.f0.accept(this, argu);
-    }
-
-     /**
-     * f0 -> Identifier()
-     * f1 -> "="
-     * f2 -> Expression()
-     * f3 -> ";"
-     */
-    public String visit(AssignmentStatement n, String scope) throws Exception
-    {
-        if (scope == null)
-            return null;
-
-        String id = n.f0.accept(this, scope);
-        String expr_value = n.f2.accept(this, scope);
-
-        // find variable
-        VariableData var = null;
-        if (scope.contains(".")) // in method of class
-        {
-            String classname, method;
-            classname = scope.substring(0, scope.indexOf("."));
-            method = scope.substring(scope.indexOf(".")+1, scope.length());
-
-            var = allClasses.searchClass(classname).searchMethod(method).searchVariable(id); // checks method's variables
-            if (var == null)    // checks class' fields
-                var = allClasses.searchClass(classname).searchVariable(id);
-        }
-        else if (scope.equals("main"))  // in main
-            var = allClasses.getMainClass().searchVariable(id);
-        else // in class
-            var = allClasses.searchClass(scope).searchVariable(id);
-
-        return null;
     }
 
 
@@ -528,10 +492,5 @@ class StoreVisitor extends GJDepthFirst<String, String> {
     public AllClasses getAllClasses()
     {
         return allClasses;
-    }
-
-    public boolean isParsedOk()
-    {
-        return parsedOk;
     }
 }
