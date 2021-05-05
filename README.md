@@ -5,40 +5,33 @@ Compilers Project 2
 -----------------
 
 
-Compile instructions: $make
+Compile instructions: $ make
 
-Execution instructions: $java Main [input files]
-
------------------
-
-The program terminates at the end of the parsing (successful or not). If the parsing was successfull, it prints the 
-offsets like instructed, else it prints all the errors it encountered.
-
-The program supports many input files at the same execution.
-
-Directory <Symbols> contains the classes that were created to store and access the data of the input files. Their class 
-names, their methods and fields, and the methods' variables are stored. Also the name of the main class.
-
-There are 2 visitors. The first one stores all the classes, methods and variables in Symbols and the second one evaluates 
-all the expressions of the program inputed.
+Execution instructions: $ java Main [input files]
 
 -----------------
 
-The DeclarationEvaluator checks:
-    
-    Class names for duplicates (also with the main class name).
-    When classes that are inherited by others, that the class has already been declared.
-    Method names for duplicates in the same scope.
-    Overriding methods to match the type and arguments (type / number) of the overrided method (in any upperclass).
-    Duplicate fields in classes.
-    Duplicate variables in methods.
-    Duplicate variables in main.
+The program supports multiple input files at the same execution.
 
-The ExpressionEvaluator checks:
+When a compiler exception is thrown, the program continues to run for the other input files.
 
-    that every variable / method / class encountered exists.
-    for matching types in any expression.
-    for correct method calls (return type, arguments).
-    array assignments for correct types and indexing (using ints).
-    allocation expressions for correct types.
-    
+The offsets for a program are printed only in successfully evaluated programs.
+
+Directory <Symbols> contains the classes that were created to store and access the data of the input files. It contains:
+
+    class AllClasses with the list of all the classes encountered, the main class and the main class' name.
+    class ClassData which contains every info related to a class.
+    class MethodData which contains every info related to a method.
+    class Variable data which stores the name and type of a variable.
+
+There are 2 visitors:
+
+    The first one stores all the classes, methods and variables that are encountered in the classes created in package 
+    Symbols. It also evaluates all declarations. For convenience, the scope is passed as a second argument of the 
+    visitors, to know where to store anything.
+
+    The second one evaluates all the expressions of the program inputed. For convenience, most visitor functions about
+    expressions and statements return their type.
+
+-----------------
+
