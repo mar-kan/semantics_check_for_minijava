@@ -1,8 +1,6 @@
+import Symbols.AllClasses;
 import Symbols.ClassData;
 import Symbols.MethodData;
-import Symbols.AllClasses;
-import visitor.*;
-import syntaxtree.*;
 
 
 /** overrides and checks everything related with declarations **/
@@ -12,9 +10,9 @@ class Visitor1 extends GJDepthFirst<String, String> {
     private AllClasses allClasses = new AllClasses();
 
 
-    Visitor1(String filename)
+    Visitor1()
     {
-        this.declarationEvaluator = new DeclarationEvaluator(filename);
+        this.declarationEvaluator = new DeclarationEvaluator();
     }
 
     /**
@@ -128,13 +126,8 @@ class Visitor1 extends GJDepthFirst<String, String> {
 
         // finds its class in MyClasses' list and adds the method there
         ClassData myClass = allClasses.searchClass(classname);
-        if (myClass == null)
-        {
-            System.out.println("Something went wrong with the classes");
-            return null;
-        }
 
-        // checks method for all possible errors
+        // checks method for all possible declaration errors
         MethodData newmethod = new MethodData(myName, myType, argumentList);
         declarationEvaluator.evaluateMethod(newmethod, myClass);
         myClass.addMethod(newmethod);
@@ -223,7 +216,7 @@ class Visitor1 extends GJDepthFirst<String, String> {
             method = scope.substring(scope.indexOf(".")+1, scope.length());
 
             MethodData methodData = allClasses.searchClass(classname).searchMethod(method);
-            declarationEvaluator.checkVarMethodDuplicates(id, methodData);    // checks for variable duplicates
+            declarationEvaluator.checkVarMethodDuplicates(id, methodData, classname);    // checks for variable duplicates
             methodData.addVariable(id, type);                                 // adds var in method of class
         }
         else if (scope.equals("main"))    /** in main **/

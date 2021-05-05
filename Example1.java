@@ -1,22 +1,29 @@
-class Example1 {
-    public static void main(String[] args) {
-        Aa a;
-        boolean t;
-
-        t = true;
-        t = true && t;
-        a = new Aa();
+class Classes {
+    public static void main(String[] a) {
+        Base b;
+        Derived d;
+        b = new Base();
+        d = new Derived();
+        b = d;
+        System.out.println(b.set(1));
+        System.out.println(b.set(3));
     }
 }
 
-class Aa{
-    int i;
-    boolean flag;
-    public int foo() {return i;}
-    public boolean fa() {return flag;}
+class Base {
+    int data;
+    public int set(int x) {
+        data = x;
+        return data;
+    }
+    public int get() {
+        return data;
+    }
 }
 
-class Cc extends Aa{
-    int l;
-    public boolean bla() { return true; }
+class Derived extends Base {
+    public int set(int x) {
+        data = x * 2;
+        return data;
+    }
 }

@@ -5,13 +5,6 @@ import Symbols.VariableData;
 
 /**** used by Visitor1 to evaluate declarations ****/
 public class DeclarationEvaluator {
-    private final String file_name;
-
-
-    DeclarationEvaluator(String filename)
-    {
-        this.file_name = filename;
-    }
 
 
     /******** Duplicate Variable checking ********/
@@ -22,14 +15,15 @@ public class DeclarationEvaluator {
         for (VariableData field : classData.getFields())
         {
             if (field.getName().equals(fieldname))
-                throw new CompileException(file_name+":"+" error: Field "+fieldname+" was already defined in class "+classData.getName()+".");
+                throw new CompileException(classData.getName()+": error: Field "+fieldname+" has already been declared " +
+                        "in class "+classData.getName()+".");
         }
 
         // doesn't check inherited class' fields. allows shadowing them.
     }
 
     /** in a method **/
-    public void checkVarMethodDuplicates(String varname, MethodData method) throws CompileException
+    public void checkVarMethodDuplicates(String varname, MethodData method, String classname) throws CompileException
     {
         // checks in arguments
         if (method.getArguments() != null)
@@ -37,7 +31,8 @@ public class DeclarationEvaluator {
             for (VariableData argument : method.getArguments())
             {
                 if (argument.getName().equals(varname))
-                    throw new CompileException(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+" as an argument.");
+                    throw new CompileException(classname+"."+method.getName()+": error: Variable "+varname+" has already" +
+                            " been declared in method "+method.getName()+" as an argument.");
             }
         }
 
@@ -45,7 +40,8 @@ public class DeclarationEvaluator {
         for (VariableData var : method.getVariables())
         {
             if (var.getName().equals(varname))
-                throw new CompileException(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+".");
+                throw new CompileException(classname+"."+method.getName()+": error: Variable "+varname+" has already been " +
+                        "declared in method "+method.getName()+".");
         }
 
         // doesn't check fields. allows shadowing them.
@@ -57,7 +53,7 @@ public class DeclarationEvaluator {
         for (VariableData var : main.getFields())
         {
             if (var.getName().equals(varname))
-                throw new CompileException(file_name + ":" + " error: Variable " + varname + " was already defined in main.");
+                throw new CompileException("main: error: Variable " + varname + " has already been declared in main.");
         }
     }
 
@@ -67,24 +63,23 @@ public class DeclarationEvaluator {
     {
         // checks with other classes
         if (allClasses.searchClass(newclassname) != null) //error duplicate class name
-            throw new CompileException(file_name+":"+" error: Class "+newclassname+" has already been declared.");
+            throw new CompileException(newclassname+": error: Class "+newclassname+" has already been declared.");
 
         // checks with main class
         if (allClasses.getMain_class_name().equals(newclassname))
-            throw new CompileException(file_name+":"+" error: Class "+newclassname+" has the same name with the Main class.");
+            throw new CompileException(newclassname+": error: Class "+newclassname+" has the same name with the Main class.");
 
         // checks if inheritance is valid
         if (extend != null)
-            checkInheritance(extend, allClasses);
+            checkInheritance(extend, allClasses, newclassname);
     }
 
     /** check for existence of inherited class **/
-    public void checkInheritance(String extend, AllClasses allClasses) throws CompileException
+    public void checkInheritance(String extend, AllClasses allClasses, String baseclass) throws CompileException
     {
-        // checks if inherited class exists
         ClassData extendClass = allClasses.searchClass(extend);
-        if (extendClass == null)
-            throw new CompileException(file_name+":"+" error: Class "+extend+" doesn't exist.");
+        if (extendClass == null && !extend.equals(allClasses.getMain_class_name()))
+            throw new CompileException(baseclass+": error: Class "+extend+" doesn't exist.");
     }
 
 
@@ -101,7 +96,7 @@ public class DeclarationEvaluator {
         for (MethodData methodData : myClass.getMethods())
         {
             if (methodData.getName().equals(method.getName()))
-                throw new CompileException(file_name+":"+" error: Method "+method.getName()+" has already been declared.");
+                throw new CompileException(myClass.getName()+": error: Method "+method.getName()+" has already been declared in this scope.");
         }
     }
 
@@ -120,8 +115,8 @@ public class DeclarationEvaluator {
                 {
                     if (!ext_method.getType().equals(method.getType())) // checks types
                     {
-                        throw new CompileException(file_name+":"+" error: \n\tMethod "+method.getName()+" has already been " +
-                                "declared in upperclass "+temp.getName()+" with type <"+ext_method.getType()
+                        throw new CompileException(myClass.getName()+": error: \n\tMethod "+method.getName()+" has already " +
+                                "been declared in upperclass "+temp.getName()+" with type <"+ext_method.getType()
                                 +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with type <"
                                 +method.getType()+">.");
                     }
@@ -144,27 +139,28 @@ public class DeclarationEvaluator {
                 return;
             else
             {
-                throw new CompileException(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                        "declared in upperclass "+myClass.getExtending().getName()+" without arguments.\n\t" + "Incompatible"+
-                        " with declaration in class "+myClass.getName()+" with arguments: <"+
+                throw new CompileException(myClass.getName()+": error: \n\tMethod "+uppermethod.getName()+" has already"
+                        +" been declared in upperclass "+myClass.getExtending().getName()+" without arguments.\n\t" +
+                        "Incompatible with declaration in class "+myClass.getName()+" with arguments: <" +
                         submethod.getArguments_to_string()+">.\n\tMethods must have the same number of arguments.");
             }
         }
         if (submethod.getArguments() == null)
         {
-            throw new CompileException(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.getArguments_to_string()
-                    +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" without arguments.\n\t" +
-                    "Methods must have the same number of arguments.");
+            throw new CompileException(myClass.getName()+": error: \n\tMethod "+uppermethod.getName()+" has already been"
+                    +" declared in upperclass "+myClass.getExtending().getName()+" with arguments: <" +
+                    uppermethod.getArguments_to_string()+">.\n\t" + "Incompatible with declaration in class "+
+                    myClass.getName()+" without arguments.\n\tMethods must have the same number of arguments.");
         }
 
         // checks if they have the same size
         if (uppermethod.getArguments().size() != submethod.getArguments().size())
         {
-            throw new CompileException(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                    "declared in upperclass "+myClass.getExtending().getName()+" with arguments: <"+uppermethod.getArguments_to_string()
-                    +">.\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with arguments: <"+
-                    submethod.getArguments_to_string()+">.\n\tMethods must have the same number of arguments.");
+            throw new CompileException(myClass.getName()+": error: \n\tMethod "+uppermethod.getName()+" has already been"
+                    +" declared in upperclass "+myClass.getExtending().getName()+" with arguments: <" +
+                    uppermethod.getArguments_to_string()+">.\n\tIncompatible with declaration in class "+myClass.getName()
+                    +" with arguments: <"+submethod.getArguments_to_string()+">.\n\tMethods must have the same number of " +
+                    "arguments.");
         }
 
         // checks their types
@@ -172,18 +168,19 @@ public class DeclarationEvaluator {
         {
             if (!uppermethod.getArguments().get(i).getType().equals(submethod.getArguments().get(i).getType()))
             {
-                throw new CompileException(file_name+":"+" error: \n\tMethod "+uppermethod.getName()+" has already been " +
-                        "declared in upperclass "+myClass.getExtending().getName()+" with arguments: "+uppermethod.getArguments_to_string()
-                        +".\n\t" + "Incompatible with declaration in class "+myClass.getName()+" with arguments: <"+
-                        submethod.getArguments_to_string()+">.\n\t"+uppermethod.getArguments().get(i).getName()+" must be of the same type.");
+                throw new CompileException(myClass.getName()+": error: \n\tMethod "+uppermethod.getName()+" has already " +
+                        "been declared in upperclass "+myClass.getExtending().getName()+" with arguments: " +
+                        uppermethod.getArguments_to_string()+".\n\tIncompatible with declaration in class " +
+                        myClass.getName()+" with arguments: <"+submethod.getArguments_to_string()+">.\n\t" +
+                        uppermethod.getArguments().get(i).getName()+" must be of the same type.");
             }
         }
 
         // checks return type of methods
         if (!uppermethod.getType().equals(submethod.getType()))
         {
-            throw new CompileException(file_name+":"+" error: Method "+uppermethod.getName()+" has already been declared with type " +
-                    uppermethod.getType()+".");
+            throw new CompileException(myClass.getName()+": error: Method "+uppermethod.getName()+" has already been " +
+                    "declared with type " + uppermethod.getType()+".");
         }
     }
 }

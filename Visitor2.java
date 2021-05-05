@@ -2,21 +2,18 @@ import Symbols.AllClasses;
 import Symbols.ClassData;
 import Symbols.MethodData;
 import Symbols.VariableData;
-import syntaxtree.*;
 import visitor.GJDepthFirst;
 
 public class Visitor2 extends GJDepthFirst<String, String> {
 
     private final ExpressionEvaluator expressionEvaluator;
     private final AllClasses allClasses;
-    private final String file_name;
 
 
-    Visitor2(String filename, AllClasses classes)
+    Visitor2(AllClasses classes)
     {
-        this.expressionEvaluator = new ExpressionEvaluator(filename, classes);
+        this.expressionEvaluator = new ExpressionEvaluator(classes);
         this.allClasses = classes;
-        this.file_name = filename;
     }
 
     /**
@@ -153,11 +150,11 @@ public class Visitor2 extends GJDepthFirst<String, String> {
 
         ClassData myClass = allClasses.searchClass(classname);
         if (myClass == null)
-            throw new CompileException(file_name+":"+" error: Class "+classname+" doesn't exist.");
+            throw new CompileException(classname+"."+myName+": error: Class "+classname+" doesn't exist.");
 
         MethodData method = myClass.searchMethod(myName);
         if (method == null)
-            throw new CompileException(file_name+":"+" error: Method "+myName+" doesn't exist in class "+classname+".");
+            throw new CompileException(classname+"."+myName+": error: Method "+myName+" doesn't exist in class "+classname+".");
 
         n.f2.accept(this, classname+"."+myName);
         n.f3.accept(this, classname+"."+myName);
@@ -191,10 +188,10 @@ public class Visitor2 extends GJDepthFirst<String, String> {
 
         VariableData var = allClasses.findVariable(id, scope);
         if (var == null)
-            throw new CompileException(file_name+":"+" error: Variable "+id+" hasn't been declared in this scope.");
+            throw new CompileException(scope+": error: Variable "+id+" hasn't been declared in this scope.");
 
         if (!var.getType().equals(type))
-            throw new CompileException(file_name+":"+" error: Expected "+var.getType()+", received "+type+".");
+            throw new CompileException(scope+": error: Expected "+var.getType()+", received "+type+".");
 
         n.f2.accept(this, scope);
         return type;
@@ -307,7 +304,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         // finds id
         VariableData var = allClasses.findVariable(id, scope);
         if (var == null)
-            throw new CompileException(file_name+":"+" error: Variable "+id+" hasn't been declared in this scope.");
+            throw new CompileException(scope+": error: Variable "+id+" hasn't been declared in this scope.");
 
         // checks that they have the same type
         expressionEvaluator.compareVariableTypes(var.getType(), expression, var.getType(), scope);
@@ -405,7 +402,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         n.f4.accept(this, scope);
 
         // checks that expr is int
-        expressionEvaluator.evaluateType(expr, expr, scope);
+        expressionEvaluator.evaluateType(expr, "int", scope);
         return "int";
 
         /*//can print integer or boolean
@@ -416,9 +413,9 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         if (expr != null && !expr.equals("int") && !expr.equals("boolean"))
         {
             if (expr.equals("int[]"))   // array
-                throw new CompileException(file_name+": error: Print statement cannot contain array.");
+                throw new CompileException(" error: Print statement cannot contain array.");
             else    // object
-                throw new CompileException(file_name+": error: Print statement cannot contain object: "+expr+".");
+                throw new CompileException(" error: Print statement cannot contain object: "+expr+".");
         }
         return expr;*/
     }
@@ -552,9 +549,9 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         String arrayName = n.f0.accept(this, scope);
         VariableData array = allClasses.findVariable(arrayName, scope);
         if (array == null)  // checks that array exists
-            throw new CompileException(file_name+": error: Array "+arrayName+" hasn't been declared in this scope.");
+            throw new CompileException(scope+": error: Array "+arrayName+" hasn't been declared in this scope.");
         else if (!array.getType().equals("int[]"))  // checks that it is an array
-            throw new CompileException(file_name+": error: Variable "+arrayName+" should be of type int[].");
+            throw new CompileException(scope+": error: Variable "+arrayName+" should be of type int[].");
 
         String index = n.f2.accept(this, scope);    // checks that it is an integer
         expressionEvaluator.evaluateType(index, "int", scope);
@@ -574,9 +571,9 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         VariableData array = allClasses.findVariable(arrayName, scope);
 
         if (array == null)  // checks that array exists
-            throw new CompileException(file_name+": error: Array "+arrayName+" hasn't been declared in this scope.");
+            throw new CompileException(scope+": error: Array "+arrayName+" hasn't been declared in this scope.");
         else if (!array.getType().equals("int[]"))  // checks that it is an array
-            throw new CompileException(file_name+": error: Variable "+arrayName+" should be of type int[].");
+            throw new CompileException(scope+": error: Variable "+arrayName+" should be of type int[].");
 
         return "int";
     }
@@ -607,14 +604,14 @@ public class Visitor2 extends GJDepthFirst<String, String> {
             // checks if it's a class name
             myClass = allClasses.searchClass(objectname);
             if (myClass == null)
-                throw new CompileException(file_name+": error: Variable "+objectname+" hasn't been declared in this scope.");
+                throw new CompileException(scope+": error: Variable "+objectname+" hasn't been declared in this scope.");
         }
 
         // checking that object's class exists
         if (myClass == null)
             myClass = allClasses.searchClass(object.getType());
         if (myClass == null)
-            throw new CompileException(file_name+": error: Class "+object.getType()+" doesn't exist.");
+            throw new CompileException(scope+": error: Class "+object.getType()+" doesn't exist.");
 
         // f2 can be a method
         String methodname = n.f2.accept(this, scope);
@@ -622,7 +619,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         // checks that method exists
         MethodData myMethod = myClass.searchMethod(methodname);
         if (myMethod == null)
-            throw new CompileException(file_name+": error: Method "+methodname+" doesn't exist.");
+            throw new CompileException(scope+": error: Method "+methodname+" doesn't exist.");
 
         // f4 can be any arguments or ""
         String method_arguments;
@@ -766,7 +763,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         n.f3.accept(this, scope);
 
         if (allClasses.searchClass(id) == null)
-            throw new CompileException(file_name+":"+" error: Class "+id+" doesn't exist.");
+            throw new CompileException(scope+": error: Class "+id+" doesn't exist.");
 
         return id;
     }

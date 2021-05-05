@@ -1,9 +1,8 @@
+import Symbols.ClassData;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-
-import Symbols.ClassData;
-import syntaxtree.*;
 
 
 public class Main {
@@ -18,7 +17,7 @@ public class Main {
         FileInputStream fis = null;
         for (String arg : args)     // supports many files.
         {
-            System.out.println("File "+arg+":");
+            System.out.print("File "+arg+":");
 
             fis = new FileInputStream(arg);
             MiniJavaParser parser = new MiniJavaParser(fis);
@@ -31,11 +30,11 @@ public class Main {
 
             try{
                 /** 1st visitor stores all values in classes of package Symbols and checks declaration related errors **/
-                visit1 = new Visitor1(arg);    // passes filename for error messages
+                visit1 = new Visitor1();    // passes filename for error messages
                 root.accept(visit1, null);
 
                 /** 2nd visitor evaluates all the other errors **/
-                visit2 = new Visitor2(arg, visit1.getAllClasses());
+                visit2 = new Visitor2(visit1.getAllClasses());
                 root.accept(visit2, null);
 
             }
@@ -50,8 +49,10 @@ public class Main {
                 if (!exception)
                 {
                     assert visit2 != null;
+                    System.out.println();
                     printClassOffsets(visit2);
                 }
+                System.out.println();
             }
         }
 

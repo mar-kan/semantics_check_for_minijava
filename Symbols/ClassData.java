@@ -53,6 +53,10 @@ public class ClassData {
             if (method.getName().equals(methodname))
                 return method;
         }
+
+        if (extending != null)  // checks superclass' fields
+            return extending.searchMethod(methodname);
+
         return null;
     }
 
@@ -79,6 +83,21 @@ public class ClassData {
             offset += 8;
         }
         return offset;
+    }
+
+    /** check for object types of inherited classes **/
+    public boolean checkInheritance(String classname)
+    {
+        ClassData ext = extending;
+        while (ext != null)
+        {
+            if (extending.getName().equals(classname))
+                return true;
+
+            ext = ext.getExtending();
+        }
+
+        return false;
     }
 
     /** updates offset according to var's type **/
