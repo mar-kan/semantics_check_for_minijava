@@ -1,4 +1,5 @@
 import Symbols.ClassData;
+import syntaxtree.Goal;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

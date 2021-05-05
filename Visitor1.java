@@ -1,6 +1,8 @@
 import Symbols.AllClasses;
 import Symbols.ClassData;
 import Symbols.MethodData;
+import visitor.GJDepthFirst;
+import syntaxtree.*;
 
 
 /** overrides and checks everything related with declarations **/

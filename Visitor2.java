@@ -3,6 +3,7 @@ import Symbols.ClassData;
 import Symbols.MethodData;
 import Symbols.VariableData;
 import visitor.GJDepthFirst;
+import syntaxtree.*;
 
 public class Visitor2 extends GJDepthFirst<String, String> {
 
