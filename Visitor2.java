@@ -42,9 +42,21 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     @Override
     public String visit(MainClass n, String argu) throws Exception
     {
+        n.f0.accept(this, argu);
         String classname = n.f1.accept(this, "main");
 
-        //String args = n.f11.accept(this, "main");   // arguments
+        n.f2.accept(this, argu);
+        n.f3.accept(this, argu);
+        n.f4.accept(this, argu);
+        n.f5.accept(this, argu);
+        n.f6.accept(this, argu);
+        n.f7.accept(this, argu);
+        n.f8.accept(this, argu);
+        n.f9.accept(this, argu);
+        n.f10.accept(this, argu);
+        n.f11.accept(this, argu);
+        n.f12.accept(this, argu);
+        n.f13.accept(this, argu);
 
         if (n.f14.present())
             n.f14.accept(this, "main");
@@ -52,8 +64,21 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         if (n.f15.present())
             n.f15.accept(this, "main");
 
+        n.f16.accept(this, argu);
+        n.f17.accept(this, argu);
+
         super.visit(n, "main");
         return classname;
+    }
+
+    /**
+     * f0 -> ClassDeclaration()
+     *       | ClassExtendsDeclaration()
+     */
+    @Override
+    public String visit(TypeDeclaration n, String argu) throws Exception
+    {
+        return n.f0.accept(this, argu);
     }
 
     /**
@@ -67,9 +92,12 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     @Override
     public String visit(ClassDeclaration n, String argu) throws Exception
     {
+        n.f0.accept(this, argu);
         String classname = n.f1.accept(this, null);
+        n.f2.accept(this, classname);
         n.f3.accept(this, classname);
         n.f4.accept(this, classname);
+        n.f5.accept(this, classname);
 
         super.visit(n, classname);
         return classname;
@@ -88,10 +116,14 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     @Override
     public String visit(ClassExtendsDeclaration n, String argu) throws Exception
     {
+        n.f0.accept(this, argu);
         String classname = n.f1.accept(this, null);
+        n.f2.accept(this, classname);
         n.f3.accept(this, classname);
+        n.f4.accept(this, classname);
         n.f5.accept(this, classname);
         n.f6.accept(this, classname);
+        n.f7.accept(this, classname);
 
         super.visit(n, classname);
         return classname;
@@ -115,6 +147,8 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     @Override
     public String visit(MethodDeclaration n, String classname) throws Exception
     {
+        n.f0.accept(this, classname);
+        n.f1.accept(this, classname);
         String myName = n.f2.accept(this, classname);
 
         ClassData myClass = allClasses.searchClass(classname);
@@ -125,14 +159,22 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         if (method == null)
             throw new CompileException(file_name+":"+" error: Method "+myName+" doesn't exist in class "+classname+".");
 
+        n.f2.accept(this, classname+"."+myName);
+        n.f3.accept(this, classname+"."+myName);
+        n.f4.accept(this, classname+"."+myName);
+        n.f5.accept(this, classname+"."+myName);
+        n.f6.accept(this, classname+"."+myName);
         n.f7.accept(this, classname+"."+myName);
         n.f8.accept(this, classname+"."+myName);
-
+        n.f9.accept(this, classname+"."+myName);
         String return_expr = n.f10.accept(this, classname+"."+myName);
+        n.f11.accept(this, classname+"."+myName);
+        n.f12.accept(this, classname+"."+myName);
 
         // checks that method has the same ret type that was declared
         expressionEvaluator.evaluateType(return_expr, method.getType(),myClass.getName()+"."+method.getName());
 
+        super.visit(n, classname+"."+myName);
         return method.getType();
     }
 
@@ -154,6 +196,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         if (!var.getType().equals(type))
             throw new CompileException(file_name+":"+" error: Expected "+var.getType()+", received "+type+".");
 
+        n.f2.accept(this, scope);
         return type;
     }
 
@@ -179,6 +222,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f0 -> FormalParameter()
      * f1 -> FormalParameterTail()
      */
+    @Override
     public String visit(FormalParameterTerm n, String scope) throws Exception
     {
         return n.f1.accept(this, scope);
@@ -192,7 +236,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     public String visit(FormalParameterTail n, String scope) throws Exception
     {
         StringBuilder ret = new StringBuilder();
-        for ( Node node: n.f0.nodes)
+        for (Node node: n.f0.nodes)
         {
             ret.append(", ").append(node.accept(this, scope));
         }
@@ -223,9 +267,27 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      *       | WhileStatement()
      *       | PrintStatement()
      */
+    @Override
     public String visit(Statement n, String argu) throws Exception
     {
         return n.f0.accept(this, argu);
+    }
+
+    /**
+     * f0 -> "{"
+     * f1 -> ( Statement() )*
+     * f2 -> "}"
+     */
+    @Override
+    public String visit(Block n, String argu) throws Exception
+    {
+        n.f0.accept(this, argu);
+        for (Node node: n.f1.nodes)
+        {
+            node.accept(this, argu);
+        }
+        n.f2.accept(this, argu);
+        return null;
     }
 
     /**
@@ -234,10 +296,13 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f2 -> Expression()
      * f3 -> ";"
      */
+    @Override
     public String visit(AssignmentStatement n, String scope) throws Exception
     {
         String id = n.f0.accept(this, scope);
+        n.f1.accept(this, scope);
         String expression = n.f2.accept(this, scope);
+        n.f3.accept(this, scope);
 
         // finds id
         VariableData var = allClasses.findVariable(id, scope);
@@ -259,16 +324,22 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f5 -> Expression()
      * f6 -> ";"
      */
+    @Override
     public String visit(ArrayAssignmentStatement n, String scope) throws Exception
     {
         String id = n.f0.accept(this, scope);
         expressionEvaluator.evaluateType(id, "int[]", scope);
 
+        n.f1.accept(this, scope);
         String index = n.f2.accept(this, scope);
         expressionEvaluator.evaluateType(index, "int", scope);
 
+        n.f3.accept(this, scope);
+        n.f4.accept(this, scope);
         String expression = n.f5.accept(this, scope);
         expressionEvaluator.evaluateType(expression, "int", scope);
+
+        n.f6.accept(this, scope);
         return "int";
     }
 
@@ -281,10 +352,18 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f5 -> "else"
      * f6 -> Statement()
      */
+    @Override
     public String visit(IfStatement n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
+        n.f1.accept(this, scope);
         String expr = n.f2.accept(this, scope);
         expressionEvaluator.evaluateType(expr, "boolean", scope);   // checks that it's a logical expression
+
+        n.f3.accept(this, scope);
+        n.f4.accept(this, scope);
+        n.f5.accept(this, scope);
+        n.f6.accept(this, scope);
 
         return "boolean";
     }
@@ -296,11 +375,16 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f3 -> ")"
      * f4 -> Statement()
      */
+    @Override
     public String visit(WhileStatement n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
+        n.f1.accept(this, scope);
         String expr = n.f2.accept(this, scope);
         expressionEvaluator.evaluateType(expr, "boolean", scope);   // checks that it's a logical expression
 
+        n.f3.accept(this, scope);
+        n.f4.accept(this, scope);
         return "boolean";
     }
 
@@ -311,10 +395,20 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f3 -> ")"
      * f4 -> ";"
      */
+    @Override
     public String visit(PrintStatement n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
+        n.f1.accept(this, scope);
         String expr = n.f2.accept(this, scope);
+        n.f3.accept(this, scope);
+        n.f4.accept(this, scope);
 
+        // checks that expr is int
+        expressionEvaluator.evaluateType(expr, expr, scope);
+        return "int";
+
+        /*//can print integer or boolean
         VariableData var = allClasses.findVariable(expr, scope);
         if (var != null)
             return var.getType();
@@ -326,7 +420,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
             else    // object
                 throw new CompileException(file_name+": error: Print statement cannot contain object: "+expr+".");
         }
-        return expr;
+        return expr;*/
     }
 
 
@@ -343,6 +437,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      *       | MessageSend()
      *       | PrimaryExpression()
      */
+    @Override
     public String visit(Expression n, String argu) throws Exception
     {
         return n.f0.accept(this, argu);
@@ -353,6 +448,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "&&"
      * f2 -> PrimaryExpression()
      */
+    @Override
     public String visit(AndExpression n, String scope) throws Exception
     {
 
@@ -372,6 +468,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "<"
      * f2 -> PrimaryExpression()
      */
+    @Override
     public String visit(CompareExpression n, String scope) throws Exception
     {
         String expr1 = n.f0.accept(this, scope);
@@ -390,6 +487,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "+"
      * f2 -> PrimaryExpression()
      */
+    @Override
     public String visit(PlusExpression n, String scope) throws Exception
     {
         String expr1 = n.f0.accept(this, scope);
@@ -409,6 +507,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "-"
      * f2 -> PrimaryExpression()
      */
+    @Override
     public String visit(MinusExpression n, String scope) throws Exception
     {
         String expr1 = n.f0.accept(this, scope);
@@ -427,6 +526,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "*"
      * f2 -> PrimaryExpression()
      */
+    @Override
     public String visit(TimesExpression n, String scope) throws Exception
     {
         String expr1 = n.f0.accept(this, scope);
@@ -446,6 +546,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f2 -> PrimaryExpression()
      * f3 -> "]"
      */
+    @Override
     public String visit(ArrayLookup n, String scope) throws Exception
     {
         String arrayName = n.f0.accept(this, scope);
@@ -466,6 +567,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> "."
      * f2 -> "length"
      */
+    @Override
     public String visit(ArrayLength n, String scope) throws Exception
     {
         String arrayName = n.f0.accept(this, scope);
@@ -487,6 +589,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f4 -> ( ExpressionList() )?
      * f5 -> ")"
      */
+    @Override
     public String visit(MessageSend n, String scope) throws Exception
     {
         ClassData myClass = null;
@@ -538,6 +641,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f0 -> Expression()
      * f1 -> ExpressionTail()
      */
+    @Override
     public String visit(ExpressionList n, String argu) throws Exception
     {
         return n.f0.accept(this, argu) + n.f1.accept(this, argu);
@@ -546,12 +650,13 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     /**
      * f0 -> ( ExpressionTerm() )*
      */
+    @Override
     public String visit(ExpressionTail n, String argu) throws Exception
     {
         StringBuilder ret = new StringBuilder();
         for (Node node: n.f0.nodes)
         {
-            ret.append(", ").append(node.accept(this, null));
+            ret.append(", ").append(node.accept(this, argu));
         }
 
         return ret.toString();
@@ -561,6 +666,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f0 -> ","
      * f1 -> Expression()
      */
+    @Override
     public String visit(ExpressionTerm n, String argu) throws Exception
     {
         n.f0.accept(this, argu);
@@ -578,6 +684,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      *       | NotExpression()
      *       | BracketExpression()
      */
+    @Override
     public String visit(PrimaryExpression n, String argu) throws Exception
     {
         return n.f0.accept(this, argu);
@@ -586,6 +693,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     /**
      * f0 -> <INTEGER_LITERAL>
      */
+    @Override
     public String visit(IntegerLiteral n, String argu) throws Exception
     {
         n.f0.accept(this, argu);
@@ -595,6 +703,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     /**
      * f0 -> "true"
      */
+    @Override
     public String visit(TrueLiteral n, String argu) throws Exception
     {
         n.f0.accept(this, argu);
@@ -604,6 +713,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     /**
      * f0 -> "false"
      */
+    @Override
     public String visit(FalseLiteral n, String argu) throws Exception
     {
         n.f0.accept(this, argu);
@@ -613,6 +723,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
     /**
      * f0 -> "this"
      */
+    @Override
     public String visit(ThisExpression n, String argu) throws Exception
     {
         n.f0.accept(this, argu);
@@ -626,9 +737,14 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f3 -> Expression()
      * f4 -> "]"
      */
+    @Override
     public String visit(ArrayAllocationExpression n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
+        n.f1.accept(this, scope);
+        n.f2.accept(this, scope);
         String expr = n.f3.accept(this, scope);
+        n.f4.accept(this, scope);
 
         expressionEvaluator.evaluateType(expr, "int", scope); // checks that expr has an integer value
 
@@ -641,9 +757,14 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f2 -> "("
      * f3 -> ")"
      */
+    @Override
     public String visit(AllocationExpression n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
         String id = n.f1.accept(this, scope);
+        n.f2.accept(this, scope);
+        n.f3.accept(this, scope);
+
         if (allClasses.searchClass(id) == null)
             throw new CompileException(file_name+":"+" error: Class "+id+" doesn't exist.");
 
@@ -654,8 +775,10 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f0 -> "!"
      * f1 -> PrimaryExpression()
      */
+    @Override
     public String visit(NotExpression n, String scope) throws Exception
     {
+        n.f0.accept(this, scope);
         String expr = n.f1.accept(this, scope);
 
         // checks that expr is boolean
@@ -669,6 +792,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
      * f1 -> Expression()
      * f2 -> ")"
      */
+    @Override
     public String visit(BracketExpression n, String argu) throws Exception
     {
         return n.f1.accept(this, argu);

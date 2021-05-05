@@ -7,53 +7,67 @@ import syntaxtree.*;
 
 
 public class Main {
+
     public static void main(String[] args) throws Exception {
-        if(args.length != 1){
+        if(args.length < 1)
+        {
             System.err.println("Usage: java Main <inputFile>");
-            System.exit(1);
+            System.exit(-1);
         }
 
         FileInputStream fis = null;
-        try{
-            for (String arg : args)
-            {
-                fis = new FileInputStream(args[0]);
-                MiniJavaParser parser = new MiniJavaParser(fis);
+        for (String arg : args)     // supports many files.
+        {
+            System.out.println("File "+arg+":");
 
-                Goal root = parser.Goal();
-                System.out.println();
+            fis = new FileInputStream(arg);
+            MiniJavaParser parser = new MiniJavaParser(fis);
 
-                // 1st visitor stores all values in classes of package Symbols
-                Visitor1 visit1 = new Visitor1(arg);    // passes filename for error messages
+            Goal root = parser.Goal();
+
+            boolean exception = false;
+            Visitor1 visit1;
+            Visitor2 visit2 = null;
+
+            try{
+                /** 1st visitor stores all values in classes of package Symbols and checks declaration related errors **/
+                visit1 = new Visitor1(arg);    // passes filename for error messages
                 root.accept(visit1, null);
 
-                // 2nd visitor evaluates all variables
-                Visitor2 visit2 = new Visitor2(arg, visit1.getAllClasses());
+                /** 2nd visitor evaluates all the other errors **/
+                visit2 = new Visitor2(arg, visit1.getAllClasses());
                 root.accept(visit2, null);
 
-                // prints offsets
-                printClassOffsets(visit2);
             }
-        }
-        catch(ParseException | CompileException | FileNotFoundException ex)
-        {
-            System.err.println(ex.getMessage());
-        }
-        finally {
-            try{
-                if(fis != null) fis.close();
-            }
-            catch(IOException ex) {
+            catch(ParseException | CompileException | FileNotFoundException ex)
+            {   // after catching an exception the program continues to the next file
                 System.err.println(ex.getMessage());
+                System.out.println();
+                exception = true;
             }
+            finally {
+                /** prints offsets in correct programs only **/
+                if (!exception)
+                {
+                    assert visit2 != null;
+                    printClassOffsets(visit2);
+                }
+            }
+        }
+
+        try{
+            if(fis != null) fis.close();
+        }
+        catch(IOException ex) {
+            System.err.println(ex.getMessage());
         }
     }
 
     /** printing offsets function **/
-    public static void printClassOffsets(Visitor2 eval)
+    public static void printClassOffsets(Visitor2 visit2)
     {
         int var_offset = 0, method_offset = 0;
-        for (ClassData aClass : eval.getMyClasses().getClasses())
+        for (ClassData aClass : visit2.getMyClasses().getClasses())
         {
             System.out.println("-----------Class "+aClass.getName()+"-----------");
 

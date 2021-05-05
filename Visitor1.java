@@ -1,10 +1,11 @@
 import Symbols.ClassData;
 import Symbols.MethodData;
 import Symbols.AllClasses;
-import Symbols.VariableData;
 import visitor.*;
 import syntaxtree.*;
 
+
+/** overrides and checks everything related with declarations **/
 
 class Visitor1 extends GJDepthFirst<String, String> {
     private DeclarationEvaluator declarationEvaluator;
@@ -40,13 +41,10 @@ class Visitor1 extends GJDepthFirst<String, String> {
     public String visit(MainClass n, String argu) throws Exception
     {
         String classname = n.f1.accept(this, "main");
-        allClasses.setMain_class_name(classname);
+        allClasses.setMain_class_name(classname);               // stores main class' name
 
         if (n.f14.present())
-            n.f14.accept(this, "main");
-
-        if (n.f15.present())
-            n.f15.accept(this, "main");
+            n.f14.accept(this, "main");                 // deals with declarations only
 
         super.visit(n, null);
         return null;
@@ -67,7 +65,7 @@ class Visitor1 extends GJDepthFirst<String, String> {
 
         // checks class for errors
         declarationEvaluator.checkClassName(classname, null, allClasses);
-        allClasses.addClass(classname, null);    // adds new class in list
+        allClasses.addClass(classname, null);    // adds new class in list of all classes
 
         n.f3.accept(this, classname);
         n.f4.accept(this, classname);
@@ -94,7 +92,7 @@ class Visitor1 extends GJDepthFirst<String, String> {
 
         // checks class for errors
         declarationEvaluator.checkClassName(classname, extend, allClasses);
-        allClasses.addClass(classname, allClasses.searchClass(extend)); // adds new class in list
+        allClasses.addClass(classname, allClasses.searchClass(extend)); // adds new class in list of all classes
 
         n.f5.accept(this, classname);
         n.f6.accept(this, classname);
@@ -124,9 +122,9 @@ class Visitor1 extends GJDepthFirst<String, String> {
         if (classname == null)
             return null;
 
-        String argumentList = n.f4.present() ? n.f4.accept(this, classname) : "";
         String myType = n.f1.accept(this, classname);
         String myName = n.f2.accept(this, classname);
+        String argumentList = n.f4.present() ? n.f4.accept(this, classname) : "";
 
         // finds its class in MyClasses' list and adds the method there
         ClassData myClass = allClasses.searchClass(classname);
@@ -141,9 +139,9 @@ class Visitor1 extends GJDepthFirst<String, String> {
         declarationEvaluator.evaluateMethod(newmethod, myClass);
         myClass.addMethod(newmethod);
 
-        n.f7.accept(this, classname+"."+myName);   // passes scope in VarDeclaration
-        n.f8.accept(this, classname+"."+myName);
+        n.f7.accept(this, classname+"."+myName);    // deals only with its declarations
 
+        super.visit(n, null);
         return null;
     }
 
@@ -218,7 +216,7 @@ class Visitor1 extends GJDepthFirst<String, String> {
         String type = n.f0.accept(this, scope);
         String id = n.f1.accept(this, scope);
 
-        if (scope.contains(".")) // in method of class
+        if (scope.contains("."))    /** in method **/
         {
             String classname, method;
             classname = scope.substring(0, scope.indexOf("."));
@@ -226,226 +224,22 @@ class Visitor1 extends GJDepthFirst<String, String> {
 
             MethodData methodData = allClasses.searchClass(classname).searchMethod(method);
             declarationEvaluator.checkVarMethodDuplicates(id, methodData);    // checks for variable duplicates
-            methodData.addVariable(id, type);    // adds var in method of class
+            methodData.addVariable(id, type);                                 // adds var in method of class
         }
-        else if (scope.equals("main"))  // in main
+        else if (scope.equals("main"))    /** in main **/
         {
-            declarationEvaluator.checkVarMainDuplicates(id, allClasses.getMainClass());    // checks for variable duplicates
-            allClasses.getMainClass().addField(id, type);  // adds var in main
+            declarationEvaluator.checkVarMainDuplicates(id, allClasses.getMainClass());  // checks for variable duplicates
+            allClasses.getMainClass().addField(id, type);                     // adds var in main
         }
-        else // in class
+        else    /** in class **/
         {
             ClassData aClass = allClasses.searchClass(scope);
-            declarationEvaluator.checkFieldDuplicates(id, aClass);     // checks for duplicate fields
-            aClass.addField(id, type);       // adds new field in its class
+            declarationEvaluator.checkFieldDuplicates(id, aClass);            // checks for duplicate fields
+            aClass.addField(id, type);                                        // adds new field in its class
         }
         return null;
     }
 
-    /******** statements ********
-
-     /**
-     * f0 -> Block()
-     *       | AssignmentStatement()
-     *       | ArrayAssignmentStatement()
-     *       | IfStatement()
-     *       | WhileStatement()
-     *       | PrintStatement()
-     */
-    public String visit(Statement n, String argu) throws Exception
-    {
-        return n.f0.accept(this, argu);
-    }
-
-
-    /******** expressions ********
-
-     /**
-     * f0 -> AndExpression()
-     *       | CompareExpression()
-     *       | PlusExpression()
-     *       | MinusExpression()
-     *       | TimesExpression()
-     *       | ArrayLookup()
-     *       | ArrayLength()
-     *       | MessageSend()
-     *       | PrimaryExpression()
-     */
-    public String visit(Expression n, String argu) throws Exception
-    {
-        return n.f0.accept(this, argu);
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "&&"
-     * f2 -> PrimaryExpression()
-     */
-    public String visit(AndExpression n, String scope) throws Exception
-    {
-        String expr1 = n.f0.accept(this, scope);
-        n.f1.accept(this, scope);
-        String expr2 = n.f2.accept(this, scope);
-
-        return expr1+"&&"+expr2;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "<"
-     * f2 -> PrimaryExpression()
-     */
-    public String visit(CompareExpression n, String scope) throws Exception
-    {
-        String expr1 = n.f0.accept(this, scope);
-        n.f1.accept(this, scope);
-        String expr2 = n.f2.accept(this, scope);
-
-        return expr1+"<"+expr2;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "+"
-     * f2 -> PrimaryExpression()
-     */
-    public String visit(PlusExpression n, String scope) throws Exception
-    {
-        if (scope == null)
-            return null;
-
-        String expr1 = n.f0.accept(this, scope);
-        n.f1.accept(this, scope);
-        String expr2 = n.f2.accept(this, scope);
-
-        return expr1+"+"+expr2;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "-"
-     * f2 -> PrimaryExpression()
-     */
-    public String visit(MinusExpression n, String scope) throws Exception
-    {
-        String expr1 = n.f0.accept(this, scope);
-        n.f1.accept(this, scope);
-        String expr2 = n.f2.accept(this, scope);
-
-        return expr1+"-"+expr2;
-    }
-
-    /**
-     * f0 -> PrimaryExpression()
-     * f1 -> "*"
-     * f2 -> PrimaryExpression()
-     */
-    public String visit(TimesExpression n, String scope) throws Exception
-    {
-        String expr1 = n.f0.accept(this, scope);
-        n.f1.accept(this, scope);
-        String expr2 = n.f2.accept(this, scope);
-
-        return expr1+"*"+expr2;
-    }
-
-    /**
-     * f0 -> Expression()
-     * f1 -> ExpressionTail()
-     */
-    public String visit(ExpressionList n, String argu) throws Exception
-    {
-        return n.f0.accept(this, argu) + n.f1.accept(this, argu);
-    }
-
-    /**
-     * f0 -> ( ExpressionTerm() )*
-     */
-    public String visit(ExpressionTail n, String argu) throws Exception
-    {
-        return n.f0.present() ? n.f0.accept(this, argu) : null;
-    }
-
-    /**
-     * f0 -> ","
-     * f1 -> Expression()
-     */
-    public String visit(ExpressionTerm n, String argu) throws Exception
-    {
-        n.f0.accept(this, argu);
-        return n.f1.accept(this, argu);
-    }
-
-    /**
-     * f0 -> IntegerLiteral()
-     *       | TrueLiteral()
-     *       | FalseLiteral()
-     *       | Identifier()
-     *       | ThisExpression()
-     *       | ArrayAllocationExpression()
-     *       | AllocationExpression()
-     *       | NotExpression()
-     *       | BracketExpression()
-     */
-    public String visit(PrimaryExpression n, String argu) throws Exception
-    {
-        return n.f0.accept(this, argu);
-    }
-
-    /**
-     * f0 -> <INTEGER_LITERAL>
-     */
-    public String visit(IntegerLiteral n, String argu) throws Exception
-    {
-        n.f0.accept(this, argu);
-        return n.f0.tokenImage;
-    }
-
-    /**
-     * f0 -> "true"
-     */
-    public String visit(TrueLiteral n, String argu) throws Exception
-    {
-        n.f0.accept(this, argu);
-        return n.f0.tokenImage;
-    }
-
-    /**
-     * f0 -> "false"
-     */
-    public String visit(FalseLiteral n, String argu) throws Exception
-    {
-        n.f0.accept(this, argu);
-        return n.f0.tokenImage;
-    }
-
-    /**
-     * f0 -> "this"
-     */
-    public String visit(ThisExpression n, String argu) throws Exception
-    {
-        n.f0.accept(this, argu);
-        return "this";
-    }
-
-    /**
-     * f0 -> "!"
-     * f1 -> PrimaryExpression()
-     */
-    public String visit(NotExpression n, String argu) throws Exception
-    {
-        return "!"+n.f1.accept(this, argu);
-    }
-
-    /**
-     * f0 -> "("
-     * f1 -> Expression()
-     * f2 -> ")"
-     */
-    public String visit(BracketExpression n, String argu) throws Exception
-    {
-        return n.f1.accept(this, argu);
-    }
 
     /******** data types ********
 

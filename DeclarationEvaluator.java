@@ -3,8 +3,10 @@ import Symbols.ClassData;
 import Symbols.MethodData;
 import Symbols.VariableData;
 
+/**** used by Visitor1 to evaluate declarations ****/
 public class DeclarationEvaluator {
     private final String file_name;
+
 
     DeclarationEvaluator(String filename)
     {
@@ -13,6 +15,7 @@ public class DeclarationEvaluator {
 
 
     /******** Duplicate Variable checking ********/
+    /** in a class **/
     public void checkFieldDuplicates(String fieldname, ClassData classData) throws CompileException
     {
         // checks fields
@@ -21,8 +24,11 @@ public class DeclarationEvaluator {
             if (field.getName().equals(fieldname))
                 throw new CompileException(file_name+":"+" error: Field "+fieldname+" was already defined in class "+classData.getName()+".");
         }
+
+        // doesn't check inherited class' fields. allows shadowing them.
     }
 
+    /** in a method **/
     public void checkVarMethodDuplicates(String varname, MethodData method) throws CompileException
     {
         // checks in arguments
@@ -41,11 +47,13 @@ public class DeclarationEvaluator {
             if (var.getName().equals(varname))
                 throw new CompileException(file_name+":"+" error: Variable "+varname+" was already defined in method "+method.getName()+".");
         }
+
+        // doesn't check fields. allows shadowing them.
     }
 
+    /** in main class **/
     public void checkVarMainDuplicates(String varname, ClassData main) throws CompileException
     {
-        // checks main variables
         for (VariableData var : main.getFields())
         {
             if (var.getName().equals(varname))
@@ -54,7 +62,7 @@ public class DeclarationEvaluator {
     }
 
     /******** class checking ********/
-
+    /** duplicate check **/
     public void checkClassName(String newclassname, String extend, AllClasses allClasses) throws CompileException
     {
         // checks with other classes
@@ -70,6 +78,7 @@ public class DeclarationEvaluator {
             checkInheritance(extend, allClasses);
     }
 
+    /** check for existence of inherited class **/
     public void checkInheritance(String extend, AllClasses allClasses) throws CompileException
     {
         // checks if inherited class exists
@@ -80,13 +89,13 @@ public class DeclarationEvaluator {
 
 
     /******** Method checking ********/
-
     public void evaluateMethod(MethodData method, ClassData myClass) throws CompileException
     {
         checkMethodName(method, myClass);
         checkMethodOverriding(method, myClass);
     }
 
+    /** duplicate check **/
     public void checkMethodName(MethodData method, ClassData myClass) throws CompileException
     {
         for (MethodData methodData : myClass.getMethods())
@@ -96,6 +105,7 @@ public class DeclarationEvaluator {
         }
     }
 
+    /** check for the type of the overridden method **/
     public void checkMethodOverriding(MethodData method, ClassData myClass) throws CompileException
     {
         if (myClass.getExtending() == null)
@@ -124,6 +134,7 @@ public class DeclarationEvaluator {
         }
     }
 
+    /** check for the number and types of the arguments of the overridden method **/
     public void checkOverridingArgs(MethodData uppermethod, MethodData submethod, ClassData myClass) throws CompileException
     {
         // checks first if any or both are null and returns accordingly
@@ -176,5 +187,3 @@ public class DeclarationEvaluator {
         }
     }
 }
-
-

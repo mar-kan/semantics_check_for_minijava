@@ -16,15 +16,14 @@ public class ExpressionEvaluator {
         this.allClasses = classes;
     }
 
+    /** evaluates both expressions with given type **/
     public void compareVariableTypes(String id, String expr, String type, String scope) throws CompileException
     {
         evaluateType(id, type, scope);
         evaluateType(expr, type, scope);
     }
 
-
-    /******** expression checking ********/
-
+    /** evaluates an expression with given type in given scope **/
     public void evaluateType(String id, String type, String scope) throws CompileException
     {
         if (id.equals(type))
@@ -33,7 +32,7 @@ public class ExpressionEvaluator {
         if (id.equals("int") || id.equals("boolean") || id.equals("int[]"))
             throw new CompileException(file_name+":"+" error: Required "+type+", but found "+id+".");
 
-        // finds variable
+        // finds variable in its scope
         VariableData var = allClasses.findVariable(id, scope);
         if (var == null)
         {
@@ -44,6 +43,7 @@ public class ExpressionEvaluator {
             if (allClasses.searchClass(id) != null)
                 throw new CompileException(file_name+":"+" error: Required "+type+", but found "+id+".");
 
+            //didn't find id
             throw new CompileException(file_name+":"+" error: Variable "+id+" hasn't been declared in this scope.");
         }
 
@@ -51,10 +51,9 @@ public class ExpressionEvaluator {
             throw new CompileException(file_name+":"+" error: Required "+type+", but found "+var.getType()+".");
     }
 
-
+    /** compares argument types of a call of a method with the declaration of the method **/
     public void compareMethodArgs(LinkedList<VariableData> methodArgs, String callArgs, String scope, String methodname) throws CompileException
     {
-        //b, a, c, t
         if (methodArgs == null)
         {
             if (!callArgs.equals(""))
@@ -88,10 +87,15 @@ public class ExpressionEvaluator {
                 else
                     classname = scope;
 
-                if (classname.equals(methodArgs.get(i).getType()))
-                    return;
-                else
-                    throw new CompileException(file_name+":"+" error: Argument "+split_args[i]+" of method "+methodname+" should be " +
+                // checks for class or upperclass type
+                ClassData aClass = allClasses.searchClass(classname);
+                while (aClass != null)
+                {
+                    if (aClass.getName().equals(methodArgs.get(i).getType()))
+                        return;
+                    aClass = aClass.getExtending();
+                }
+                throw new CompileException(file_name+":"+" error: Argument "+split_args[i]+" of method "+methodname+" should be " +
                             "of type "+methodArgs.get(i).getType()+".");
             }
 
@@ -101,13 +105,6 @@ public class ExpressionEvaluator {
 
             if (!arg.getType().equals(methodArgs.get(i).getType()))
             {
-                ClassData myClass = allClasses.searchClass(arg.getType());
-                while (myClass.getExtending() != null)                      // checks for upperclass types
-                {
-                    if (myClass.getExtending().getName().equals(methodArgs.get(i).getType()))
-                        return;
-                    myClass = myClass.getExtending();
-                }
                 throw new CompileException(file_name+":"+" error: Argument "+arg.getName()+" of method "+methodname+" should be " +
                         "of type "+methodArgs.get(i).getType()+".");
             }
