@@ -557,7 +557,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         // checks that method exists
         MethodData myMethod = myClass.searchMethod(methodname);
         if (myMethod == null)
-            throw new Exception(scope+": error: Method "+methodname+" doesn't exist.");
+            throw new Exception(scope+": error: Method "+methodname+" hasn't been declared in this scope.");
 
         // f4 can be any num of arguments or ""
         String method_arguments;
@@ -671,7 +671,7 @@ public class Visitor2 extends GJDepthFirst<String, String> {
         if (scope.contains("."))
             return scope.substring(0, scope.indexOf("."));
         else if (scope.equals("main"))
-            throw new Exception(scope+" error: \"this\" cannot be used in this scope.");
+            throw new Exception(scope+" error: \"this\" cannot be used in this scope.\n It has to refer to a class");
         else
             return scope;
     }

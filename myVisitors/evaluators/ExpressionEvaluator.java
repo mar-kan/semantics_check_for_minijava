@@ -1,10 +1,8 @@
 package myVisitors.evaluators;
 
-import symbols.AllClasses;
-import symbols.ClassData;
-import symbols.VariableData;
-
 import java.util.LinkedList;
+import symbols.*;
+
 
 public class ExpressionEvaluator {
 
@@ -36,8 +34,8 @@ public class ExpressionEvaluator {
         VariableData var = allClasses.findVariable(id, scope);
         if (var == null)
         {
-            if ((id.equals("this") || id.equals("null")) && !type.equals("int") && !type.equals("boolean") && !type.equals("int[]"))   // type = class
-                return;
+            if ((id.equals("null")) && !type.equals("int") && !type.equals("boolean") && !type.equals("int[]"))   // type = class
+                return; // lets an object be assigned to null
 
             // checking if id is a classname
             if (allClasses.searchClass(id) != null)
@@ -55,7 +53,7 @@ public class ExpressionEvaluator {
         if (!var.getType().equals(type))
         {
             // checks inheritance
-            ClassData aClass = allClasses.searchClass(type);
+            ClassData aClass = allClasses.searchClass(var.getType());
             while (aClass != null)
             {
                 if (aClass.getName().equals(type))
@@ -93,28 +91,6 @@ public class ExpressionEvaluator {
 
             if (methodArgs.get(i).getType().equals(split_args[i]))
                 continue;
-
-            if (split_args[i].equals("this"))
-            {
-                if (scope.equals("main"))
-                    throw new Exception(scope+": error: \"this\" isn't valid in main program.");
-                String classname;
-                if (scope.contains("."))
-                    classname = scope.substring(0, scope.indexOf("."));
-                else
-                    classname = scope;
-
-                // checks for class or upperclass type
-                ClassData aClass = allClasses.searchClass(classname);
-                while (aClass != null)
-                {
-                    if (aClass.getName().equals(methodArgs.get(i).getType()))
-                        return;
-                    aClass = aClass.getExtending();
-                }
-                throw new Exception(scope+": error: Argument "+split_args[i]+" of method "+methodname+" should be " +
-                            "of type "+methodArgs.get(i).getType()+".");
-            }
 
             VariableData arg = allClasses.findVariable(split_args[i], scope);
             if (arg == null)

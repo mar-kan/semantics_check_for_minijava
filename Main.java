@@ -13,6 +13,7 @@ public class Main {
             System.exit(-1);
         }
 
+        System.out.println();
         FileInputStream fis = null;
         for (String arg : args)     // supports many files.
         {

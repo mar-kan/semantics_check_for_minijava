@@ -18,7 +18,7 @@ public class DeclarationEvaluator {
         {
             if (field.getName().equals(fieldname))
                 throw new Exception(classData.getName()+": error: Field "+fieldname+" has already been declared " +
-                        "in class "+classData.getName()+".");
+                        "in this scope.");
         }
 
         // doesn't check inherited class' fields. allows shadowing them.
@@ -34,7 +34,7 @@ public class DeclarationEvaluator {
             {
                 if (argument.getName().equals(varname))
                     throw new Exception(classname+"."+method.getName()+": error: Variable "+varname+" has already" +
-                            " been declared in method "+method.getName()+" as an argument.");
+                            " been declared in method this scope as an argument.");
             }
         }
 
@@ -43,7 +43,7 @@ public class DeclarationEvaluator {
         {
             if (var.getName().equals(varname))
                 throw new Exception(classname+"."+method.getName()+": error: Variable "+varname+" has already been " +
-                        "declared in method "+method.getName()+".");
+                        "declared in this scope.");
         }
 
         // doesn't check fields. allows shadowing them.
@@ -55,7 +55,7 @@ public class DeclarationEvaluator {
         for (VariableData var : main.getFields())
         {
             if (var.getName().equals(varname))
-                throw new Exception("main: error: Variable " + varname + " has already been declared in main.");
+                throw new Exception("main: error: Variable " + varname + " has already been declared in this scope.");
         }
     }
 
