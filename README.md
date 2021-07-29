@@ -1,5 +1,3 @@
-Kanellaki Maria-Anna  -  1115201400060
-
 Compilers Project 2
 
 -----------------
